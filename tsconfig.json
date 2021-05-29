@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "outDir": "./dist",
+    "target": "esnext",
+    "moduleResolution": "node",
+    "strict": true,
+    "emitDeclarationOnly": false,
+    "jsx": "preserve",
+    "jsxImportSource": "solid-js"
+  },
+  "include": [
+    "./src"
+  ]
+}
