@@ -1,6 +1,5 @@
 import {
   createContext,
-  createState,
   createComputed,
   onMount,
   onCleanup,
@@ -10,6 +9,7 @@ import {
   JSX,
   mergeProps
 } from "solid-js";
+import { createStore } from "solid-js/store";
 import { isServer, Show, Portal, Dynamic } from "solid-js/web";
 
 interface TagDescription {
@@ -33,7 +33,7 @@ const cascadingTags = ["title", "meta"];
 
 const MetaProvider: Component<{ tags?: Array<TagDescription> }> = props => {
   const indices = new Map(),
-    [state, setState] = createState<{ [k: string]: (string | null)[] }>({});
+    [state, setState] = createStore<{ [k: string]: (string | null)[] }>({});
 
   onMount(() => {
     const ssrTags = document.head.querySelectorAll(`[data-sm=""]`);
