@@ -2,6 +2,9 @@
 
 Asynchronous SSR-ready Document Head management for Solid based on [React Head](https://github.com/tizmagik/react-head)
 
+For Solid 1.0 use 0.27.x or greater.
+For versions of Solid 0.x use 0.26.x.
+
 ## Motivation
 
 This module allows you to define `document.head` tags anywhere in your component hierarchy. The motivations are similar to [react-helmet](https://github.com/nfl/react-helmet) in that you may only have the information for certain tags contextually deep in your component hiearchy. There are no dependencies and it should work fine with asynchronous rendering.
