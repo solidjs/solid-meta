@@ -1,15 +1,13 @@
 import {
+  createSignal,
   createContext,
   createComputed,
   onMount,
   onCleanup,
-  splitProps,
   useContext,
   Component,
-  JSX,
-  mergeProps
+  JSX
 } from "solid-js";
-import { createStore } from "solid-js/store";
 import { isServer, Show, Portal, Dynamic } from "solid-js/web";
 
 interface TagDescription {
@@ -33,7 +31,7 @@ const cascadingTags = ["title", "meta"];
 
 const MetaProvider: Component<{ tags?: Array<TagDescription> }> = props => {
   const indices = new Map(),
-    [state, setState] = createStore<{ [k: string]: (string | null)[] }>({});
+    [tags, setTags] = createSignal<{ [k: string]: (string | null)[] }>({});
 
   onMount(() => {
     const ssrTags = document.head.querySelectorAll(`[data-sm=""]`);
@@ -45,9 +43,9 @@ const MetaProvider: Component<{ tags?: Array<TagDescription> }> = props => {
     addClientTag: (tag: string, name: string) => {
       // consider only cascading tags
       if (cascadingTags.indexOf(tag) !== -1) {
-        setState(state => {
-          const names = state[tag] || [];
-          return { [tag]: [...names, name] };
+        setTags(tags => {
+          const names = tags[tag] || [];
+          return { ...tags, [tag]: [...names, name] };
         });
         // track indices synchronously
         const index = indices.has(tag) ? indices.get(tag) + 1 : 0;
@@ -59,7 +57,7 @@ const MetaProvider: Component<{ tags?: Array<TagDescription> }> = props => {
 
     shouldRenderTag: (tag: string, index: number) => {
       if (cascadingTags.indexOf(tag) !== -1) {
-        const names = state[tag];
+        const names = tags()[tag];
         // check if the tag is the last one of similar
         return names && names.lastIndexOf(names[index]) === index;
       }
@@ -67,9 +65,13 @@ const MetaProvider: Component<{ tags?: Array<TagDescription> }> = props => {
     },
 
     removeClientTag: (tag: string, index: number) => {
-      setState(tag, (names: any) => {
-        if (names) return { [index]: null };
-        return names;
+      setTags(tags => {
+        const names = tags[tag];
+        if (names) {
+          names[index] = null;
+          return { ...tags, [tag]: names };
+        }
+        return tags;
       });
     }
   };
@@ -89,7 +91,7 @@ const MetaProvider: Component<{ tags?: Array<TagDescription> }> = props => {
         }
       }
       tags.push(tagDesc);
-    }
+    };
 
     if (Array.isArray(props.tags) === false) {
       throw Error("tags array should be passed to <MetaProvider /> in node");
@@ -99,26 +101,25 @@ const MetaProvider: Component<{ tags?: Array<TagDescription> }> = props => {
   return <MetaContext.Provider value={actions}>{props.children}</MetaContext.Provider>;
 };
 
-const MetaTag: Component<{ [k: string]: any }> = props => {
+const MetaTag = (tag: string, props: { [k: string]: any }) => {
   const c = useContext(MetaContext);
   if (!c) throw new Error("<MetaProvider /> should be in the tree");
   const { addClientTag, removeClientTag, addServerTag, shouldRenderTag } = c;
 
   let index = -1;
   createComputed(() => {
-    index = addClientTag(props.tag, props.name || props.property);
-    onCleanup(() => removeClientTag(props.tag, index));
+    index = addClientTag(tag, props.name || props.property);
+    onCleanup(() => removeClientTag(tag, index));
   });
 
-  const [internal, rest] = splitProps(props, ["tag"]);
   if (isServer) {
-    addServerTag!({ tag: internal.tag, props: rest });
+    addServerTag!({ tag, props });
     return null;
   }
   return (
-    <Show when={shouldRenderTag(internal.tag, index)}>
+    <Show when={shouldRenderTag(tag, index)}>
       <Portal mount={document.head}>
-        <Dynamic component={internal.tag as string} {...rest} />
+        <Dynamic component={tag} {...props} />
       </Portal>
     </Show>
   );
@@ -138,16 +139,16 @@ export function renderTags(tags: Array<TagDescription>) {
 }
 
 export const Title: Component<JSX.HTMLAttributes<HTMLTitleElement>> = props =>
-  MetaTag(mergeProps({ tag: "title" }, props));
+  MetaTag("title", props);
 
 export const Style: Component<JSX.StyleHTMLAttributes<HTMLStyleElement>> = props =>
-  MetaTag(mergeProps({ tag: "style" }, props));
+  MetaTag("style", props);
 
 export const Meta: Component<JSX.MetaHTMLAttributes<HTMLMetaElement>> = props =>
-  MetaTag(mergeProps({ tag: "meta" }, props));
+  MetaTag("meta", props);
 
 export const Link: Component<JSX.LinkHTMLAttributes<HTMLLinkElement>> = props =>
-  MetaTag(mergeProps({ tag: "link" }, props));
+  MetaTag("link", props);
 
 export const Base: Component<JSX.BaseHTMLAttributes<HTMLBaseElement>> = props =>
-  MetaTag(mergeProps({ tag: "base" }, props));
+  MetaTag("base", props);
