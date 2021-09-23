@@ -131,11 +131,9 @@ export function renderTags(tags: Array<TagDescription>) {
   return tags
     .map(tag => {
       const keys = Object.keys(tag.props);
-      return `<${tag.tag} data-sm=""${keys.map(k =>
-        k === "children" ? "" : ` ${k}="${tag.props[k]}"`
-      )}>${tag.props.children || ""}</${tag.tag}>`;
-    })
-    .join("");
+      const props = keys.map(k => k === "children" ? "" : ` ${k}="${tag.props[k]}"`).join("");
+      return tag.props.children ? `<${tag.tag} data-sm=""${props}>${tag.props.children}</${tag.tag}>` : `<${tag.tag} data-sm=""${props}/>`
+    }).join("");
 }
 
 export const Title: Component<JSX.HTMLAttributes<HTMLTitleElement>> = props =>
