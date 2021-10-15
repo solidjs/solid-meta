@@ -132,7 +132,7 @@ export function renderTags(tags: Array<TagDescription>) {
     .map(tag => {
       const keys = Object.keys(tag.props);
       const props = keys.map(k => k === "children" ? "" : ` ${k}="${tag.props[k]}"`).join("");
-      return tag.props.children ? `<${tag.tag} data-sm=""${props}>${tag.props.children}</${tag.tag}>` : `<${tag.tag} data-sm=""${props}/>`
+      return tag.props.children ? `<${tag.tag} data-sm=""${props}>${tag.props.children}</${tag.tag}>` : `<${tag.tag} ${props}/>`
     }).join("");
 }
 
