@@ -36,7 +36,7 @@ import App from './App';
 // ... within the context of a request ...
 
 const tags = []; // mutated during render so you can include in server-rendered template later
-const app = renderToString(
+const app = renderToString(() =>
   <MetaProvider tags={tags}>
     <App />
   </MetaProvider>
@@ -44,6 +44,7 @@ const app = renderToString(
 
 res.send(`
   <!doctype html>
+  <html>
     <head>
       ${renderTags(tags)}
     </head>
