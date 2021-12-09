@@ -1,4 +1,8 @@
-# solid-meta [![npm Version](https://img.shields.io/npm/v/solid-meta.svg?style=flat-square)](https://www.npmjs.org/package/solid-meta)
+<p>
+  <img width="100%" src="https://raw.githubusercontent.com/solidjs/solid-meta/master/banner.png" alt="Solid Meta">
+</p>
+
+# Solid Meta [![npm Version](https://img.shields.io/npm/v/solid-meta.svg?style=flat-square)](https://www.npmjs.org/package/solid-meta)
 
 Asynchronous SSR-ready Document Head management for Solid based on [React Head](https://github.com/tizmagik/react-head)
 
