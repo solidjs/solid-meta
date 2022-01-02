@@ -131,9 +131,16 @@ export function renderTags(tags: Array<TagDescription>) {
   return tags
     .map(tag => {
       const keys = Object.keys(tag.props);
-      const props = keys.map(k => k === "children" ? "" : ` ${k}="${tag.props[k]}"`).join("");
-      return tag.props.children ? `<${tag.tag} data-sm=""${props}>${tag.props.children}</${tag.tag}>` : `<${tag.tag} data-sm=""${props}/>`
-    }).join("");
+      const props = keys.map(k => (k === "children" ? "" : ` ${k}="${tag.props[k]}"`)).join("");
+      return tag.props.children
+        ? `<${tag.tag} data-sm=""${props}>${
+            // Tags might contain multiple text children:
+            //   <Title>example - {myCompany}</Title>
+            Array.isArray(tag.props.children) ? tag.props.children.join("") : tag.props.children
+          }</${tag.tag}>`
+        : `<${tag.tag} data-sm=""${props}/>`;
+    })
+    .join("");
 }
 
 export const Title: Component<JSX.HTMLAttributes<HTMLTitleElement>> = props =>
