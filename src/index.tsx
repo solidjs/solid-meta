@@ -6,6 +6,7 @@ import {
   onCleanup,
   useContext,
   Component,
+  ParentComponent,
   JSX
 } from "solid-js";
 import { isServer, Show, Portal, Dynamic } from "solid-js/web";
@@ -29,7 +30,7 @@ const MetaContext = createContext<MetaContextType>();
 
 const cascadingTags = ["title", "meta"];
 
-const MetaProvider: Component<{ tags?: Array<TagDescription> }> = props => {
+const MetaProvider: ParentComponent<{ tags?: Array<TagDescription> }> = props => {
   const indices = new Map(),
     [tags, setTags] = createSignal<{ [k: string]: (string | null)[] }>({});
 
