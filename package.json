@@ -8,12 +8,14 @@
     "type": "git",
     "url": "https://github.com/solidjs/solid-meta"
   },
-  "type": "module",
-  "main": "dist/index.js",
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
   "exports": {
     ".": {
       "solid": "./dist/index.jsx",
+      "require": "./dist/index.cjs",
       "default": "./dist/index.js"
+      
     }
   },
   "types": "dist/index.d.ts",
@@ -24,7 +26,7 @@
   "scripts": {
     "prebuild": "npm run clean",
     "clean": "rimraf dist/",
-    "build": "tsc && babel src/index.tsx --out-file dist/index.js",
+    "build": "tsc && babel src/index.tsx --out-file dist/index.js && babel src/index.tsx --out-file dist/index.js --plugins @babel/plugin-transform-modules-commonjs",
     "test": "jest && npm run test:types",
     "test:types": "tsc --project tsconfig.test.json"
   },
@@ -34,6 +36,7 @@
   "devDependencies": {
     "@babel/cli": "^7.14.3",
     "@babel/core": "7.14.3",
+    "@babel/plugin-transform-modules-commonjs": "^7.18.2",
     "@babel/preset-env": "7.14.4",
     "@babel/preset-typescript": "7.13.0",
     "@types/jest": "^26.0.23",
