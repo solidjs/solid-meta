@@ -7,13 +7,16 @@ import {
   useContext,
   Component,
   ParentComponent,
-  JSX
+  JSX,
+  createUniqueId,
+  createRenderEffect
 } from "solid-js";
-import { isServer, Show, Portal, Dynamic } from "solid-js/web";
+import { isServer, spread } from "solid-js/web";
 
 interface TagDescription {
   tag: string;
   props: Record<string, unknown>;
+  id: string;
 }
 
 interface MetaContextType {
@@ -103,6 +106,7 @@ const MetaProvider: ParentComponent<{ tags?: Array<TagDescription> }> = props =>
 };
 
 const MetaTag = (tag: string, props: { [k: string]: any }) => {
+  const id = createUniqueId();
   const c = useContext(MetaContext);
   if (!c) throw new Error("<MetaProvider /> should be in the tree");
   const { addClientTag, removeClientTag, addServerTag, shouldRenderTag } = c;
@@ -114,16 +118,48 @@ const MetaTag = (tag: string, props: { [k: string]: any }) => {
   });
 
   if (isServer) {
-    addServerTag!({ tag, props });
+    addServerTag!({ tag, props, id });
     return null;
   }
-  return (
-    <Show when={shouldRenderTag(tag, index)}>
-      <Portal mount={document.head}>
-        <Dynamic component={tag} {...props} />
-      </Portal>
-    </Show>
-  );
+
+  createRenderEffect(() => {
+    let el: HTMLElement | null = null;
+    if (shouldRenderTag(tag, index)) {
+      el = document.querySelector(`[data-sm="${id}"]`);
+
+      if (el) {
+        if (el.tagName.toLowerCase() !== tag) {
+          if (el.parentNode) {
+            // remove the old tag
+            el.parentNode.removeChild(el);
+          }
+
+          // add the new tag
+          el = document.createElement(tag);
+          el.setAttribute("data-sm", id);
+          document.head.appendChild(el);
+        }
+
+        // use the old tag
+      } else {
+        // create a new tag
+        el = document.createElement(tag);
+        el.setAttribute("data-sm", id);
+        document.head.appendChild(el);
+      }
+
+      // update the tag
+      spread(el, props);
+    }
+
+    onCleanup(() => {
+      if (el && el.parentNode) {
+        el.parentNode.removeChild(el);
+      }
+    });
+  });
+
+  return null;
 };
 
 export { MetaProvider };
@@ -134,12 +170,12 @@ export function renderTags(tags: Array<TagDescription>) {
       const keys = Object.keys(tag.props);
       const props = keys.map(k => (k === "children" ? "" : ` ${k}="${tag.props[k]}"`)).join("");
       return tag.props.children
-        ? `<${tag.tag} data-sm=""${props}>${
+        ? `<${tag.tag} data-sm="${tag.id}"${props}>${
             // Tags might contain multiple text children:
             //   <Title>example - {myCompany}</Title>
             Array.isArray(tag.props.children) ? tag.props.children.join("") : tag.props.children
           }</${tag.tag}>`
-        : `<${tag.tag} data-sm=""${props}/>`;
+        : `<${tag.tag} data-sm="${tag.id}"${props}/>`;
     })
     .join("");
 }
@@ -158,3 +194,7 @@ export const Link: Component<JSX.LinkHTMLAttributes<HTMLLinkElement>> = props =>
 
 export const Base: Component<JSX.BaseHTMLAttributes<HTMLBaseElement>> = props =>
   MetaTag("base", props);
+
+export const Stylesheet: Component<
+  Omit<JSX.LinkHTMLAttributes<HTMLLinkElement>, "rel">
+> = props => <Link rel="stylesheet" {...props} />;
