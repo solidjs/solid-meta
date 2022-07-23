@@ -191,10 +191,10 @@ test("switches between titles", async () => {
     div
   );
 
-  await new Promise(resolve => setTimeout(resolve, 1000));
+  await new Promise(resolve => setTimeout(resolve, 1));
   expect(document.head.innerHTML).toBe(snapshot1);
   setVisible(false);
-  await new Promise(resolve => setTimeout(resolve, 1000));
+  await new Promise(resolve => setTimeout(resolve, 1));
   expect(document.head.innerHTML).toBe(snapshot2);
   dispose();
 });
