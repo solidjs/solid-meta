@@ -35,6 +35,8 @@ const getTagType = (tag: TagDescription) => tag.tag + (tag.name ? `.${tag.name}"
 const MetaProvider: ParentComponent<{ tags?: Array<TagDescription> }> = props => {
   const cascadedTagInstances = new Map();
 
+  // TODO: use one element for all tags of the same type, just swap out
+  // where the props get applied
   function getElement(tag: TagDescription) {
     if (tag.ref) {
       return tag.ref;
