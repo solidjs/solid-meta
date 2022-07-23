@@ -9,7 +9,8 @@ import {
   ParentComponent,
   JSX,
   createUniqueId,
-  createRenderEffect
+  createRenderEffect,
+  createMemo
 } from "solid-js";
 import { isServer, spread } from "solid-js/web";
 
@@ -61,6 +62,7 @@ const MetaProvider: ParentComponent<{ tags?: Array<TagDescription> }> = props =>
 
     shouldRenderTag: (tag: string, index: number) => {
       if (cascadingTags.indexOf(tag) !== -1) {
+        console.log(tags());
         const names = tags()[tag];
         // check if the tag is the last one of similar
         return names && names.lastIndexOf(names[index]) === index;
@@ -122,39 +124,41 @@ const MetaTag = (tag: string, props: { [k: string]: any }) => {
     return null;
   }
 
+  let el: HTMLElement | null = null;
+  let rendered = false;
+
   createRenderEffect(() => {
-    let el: HTMLElement | null = null;
-    if (shouldRenderTag(tag, index)) {
-      el = document.querySelector(`[data-sm="${id}"]`);
-
-      if (el) {
-        if (el.tagName.toLowerCase() !== tag) {
-          if (el.parentNode) {
-            // remove the old tag
-            el.parentNode.removeChild(el);
-          }
-
-          // add the new tag
-          el = document.createElement(tag);
-          el.setAttribute("data-sm", id);
-          document.head.appendChild(el);
+    el = document.querySelector(`[data-sm="${id}"]`);
+    if (el) {
+      if (el.tagName.toLowerCase() !== tag) {
+        if (el.parentNode) {
+          // remove the old tag
+          el.parentNode.removeChild(el);
         }
-
-        // use the old tag
-      } else {
-        // create a new tag
+        // add the new tag
         el = document.createElement(tag);
-        el.setAttribute("data-sm", id);
-        document.head.appendChild(el);
       }
+      // use the old tag
+      el.removeAttribute("data-sm");
+      rendered = true;
+    } else {
+      // create a new tag
+      el = document.createElement(tag);
+    }
+    // update the tag
+    spread(el, () => props);
+  });
 
-      // update the tag
-      spread(el, props);
+  const shouldRender = createMemo(() => shouldRenderTag(tag, index));
+
+  createRenderEffect(() => {
+    if (shouldRender() && el && !rendered) {
+      document.head.appendChild(el);
     }
 
     onCleanup(() => {
       if (el && el.parentNode) {
-        el.parentNode.removeChild(el);
+        document.head.removeChild(el);
       }
     });
   });
