@@ -1,7 +1,8 @@
 /* @jsxImportSource solid-js */
-import { createSignal } from "solid-js";
-import { render, Show } from "solid-js/web";
+import { createSignal, lazy } from "solid-js";
+import { hydrate, render, Show } from "solid-js/web";
 import { MetaProvider, Title, Style, Meta, Link, Base } from "../src";
+import { hydrationScript, removeScript } from "./hydration_script";
 
 global.queueMicrotask = setImmediate;
 
@@ -51,6 +52,33 @@ test("renders only the last title", () => {
   dispose();
 });
 
+test("hydrates only the last title", () => {
+  hydrationScript();
+  let div = document.createElement("div");
+  document.head.innerHTML = `<title data-sm="0-0-2-0">Title 3</title>`;
+  const snapshot = "<title>Title 3</title>";
+  const dispose = hydrate(
+    () => (
+      <MetaProvider>
+        <div>
+          <Title>Title 1</Title>
+        </div>
+        <div>
+          <Title>Title 2</Title>
+        </div>
+        <div>
+          <Title>Title 3</Title>
+        </div>
+      </MetaProvider>
+    ),
+    div
+  );
+  expect(document.head.innerHTML).toBe(snapshot);
+  dispose();
+  removeScript();
+  document.head.innerHTML = "";
+});
+
 test("mounts and unmounts title", () => {
   let div = document.createElement("div");
   const snapshot1 = "<title>Static</title>";
@@ -76,24 +104,70 @@ test("mounts and unmounts title", () => {
   dispose();
 });
 
-test("switches between titles", () => {
+test("hydrates and unmounts title", () => {
+  hydrationScript();
   let div = document.createElement("div");
-  const snapshot1 = "<title>Title 1</title>";
-  const snapshot2 = "<title>Title 2</title>";
-  const [visible, setVisible] = createSignal(true);
-  const dispose = render(
+  document.head.innerHTML = `<title data-sm="0-0-0-0">Title 3</title>`;
+  const snapshot1 = "<title>Static</title>";
+  const snapshot2 = "<title>Dynamic</title>";
+  const [visible, setVisible] = createSignal(false);
+  const dispose = hydrate(
     () => (
       <MetaProvider>
         <Title>Static</Title>
-        <Show when={visible()} fallback={<Title>Title 2</Title>}>
-          <Title>Title 1</Title>
+        <Show when={visible()}>
+          <Title>Dynamic</Title>
         </Show>
       </MetaProvider>
     ),
     div
   );
+
+  expect(document.head.innerHTML).toBe(snapshot1);
+  setVisible(true);
+  expect(document.head.innerHTML).toBe(snapshot2);
+  setVisible(false);
+  expect(document.head.innerHTML).toBe(snapshot1);
+  dispose();
+  document.head.innerHTML = "";
+  removeScript();
+});
+
+test("switches between titles", async () => {
+  let div = document.createElement("div");
+  const snapshot1 = "<title>Title 1</title>";
+  const snapshot2 = "<title>Title 2</title>";
+  const [visible, setVisible] = createSignal(true);
+
+  const Comp1 = lazy(async () => ({
+    default: function Comp() {
+      return <Title>Title 1</Title>;
+    }
+  }));
+
+  const Comp2 = lazy(async () => ({
+    default: function Comp() {
+      return <Title>Title 2</Title>;
+    }
+  }));
+
+  const dispose = render(
+    () => (
+      <MetaProvider>
+        <Title>Static</Title>
+        <Show when={visible()} fallback={<Comp2 />}>
+          <Comp1 />
+        </Show>
+      </MetaProvider>
+    ),
+    div
+  );
+
+  await Comp1.preload();
+  await new Promise(resolve => setTimeout(resolve, 1000));
   expect(document.head.innerHTML).toBe(snapshot1);
   setVisible(false);
+  await new Promise(resolve => setTimeout(resolve, 1000));
   expect(document.head.innerHTML).toBe(snapshot2);
   dispose();
 });

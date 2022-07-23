@@ -10,7 +10,8 @@ import {
   JSX,
   createUniqueId,
   createRenderEffect,
-  createMemo
+  createMemo,
+  children
 } from "solid-js";
 import { isServer, spread } from "solid-js/web";
 
@@ -38,11 +39,11 @@ const MetaProvider: ParentComponent<{ tags?: Array<TagDescription> }> = props =>
   const indices = new Map(),
     [tags, setTags] = createSignal<{ [k: string]: (string | null)[] }>({});
 
-  onMount(() => {
-    const ssrTags = document.head.querySelectorAll(`[data-sm=""]`);
-    // `forEach` on `NodeList` is not supported in Googlebot, so use a workaround
-    Array.prototype.forEach.call(ssrTags, (ssrTag: Node) => ssrTag.parentNode!.removeChild(ssrTag));
-  });
+  // onMount(() => {
+  //   const ssrTags = document.head.querySelectorAll(`[data-sm]`);
+  //   // `forEach` on `NodeList` is not supported in Googlebot, so use a workaround
+  //   Array.prototype.forEach.call(ssrTags, (ssrTag: Node) => ssrTag.parentNode!.removeChild(ssrTag));
+  // });
 
   const actions: MetaContextType = {
     addClientTag: (tag: string, name: string) => {
@@ -62,7 +63,6 @@ const MetaProvider: ParentComponent<{ tags?: Array<TagDescription> }> = props =>
 
     shouldRenderTag: (tag: string, index: number) => {
       if (cascadingTags.indexOf(tag) !== -1) {
-        console.log(tags());
         const names = tags()[tag];
         // check if the tag is the last one of similar
         return names && names.lastIndexOf(names[index]) === index;
@@ -109,6 +109,7 @@ const MetaProvider: ParentComponent<{ tags?: Array<TagDescription> }> = props =>
 
 const MetaTag = (tag: string, props: { [k: string]: any }) => {
   const id = createUniqueId();
+  console.log(id)
   const c = useContext(MetaContext);
   if (!c) throw new Error("<MetaProvider /> should be in the tree");
   const { addClientTag, removeClientTag, addServerTag, shouldRenderTag } = c;
@@ -147,6 +148,9 @@ const MetaTag = (tag: string, props: { [k: string]: any }) => {
     }
     // update the tag
     spread(el, () => props);
+    if (tag === "title") {
+      createRenderEffect(() => el.textContent = children(() => props.children)());
+    }
   });
 
   const shouldRender = createMemo(() => shouldRenderTag(tag, index));
@@ -159,6 +163,7 @@ const MetaTag = (tag: string, props: { [k: string]: any }) => {
     onCleanup(() => {
       if (el && el.parentNode) {
         document.head.removeChild(el);
+        rendered = false
       }
     });
   });
