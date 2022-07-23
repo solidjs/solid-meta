@@ -9,7 +9,7 @@ global.queueMicrotask = setImmediate;
 test("renders into document.head portal", () => {
   let div = document.createElement("div");
   const snapshot =
-    '<title>Test title</title><style>body {}</style><link href="index.css"><meta charset="utf-8"><base href="/new_base">';
+    '<title>Test title</title><style>body {}</style><style>div {}</style><link href="index.css"><link href="favicon.ico"><meta charset="utf-8"><base href="/new_base">';
   const dispose = render(
     () => (
       <MetaProvider>
@@ -17,7 +17,9 @@ test("renders into document.head portal", () => {
           Yes render
           <Title>Test title</Title>
           <Style>{`body {}`}</Style>
+          <Style>{`div {}`}</Style>
           <Link href="index.css" />
+          <Link href="favicon.ico" />
           <Meta charset="utf-8" />
           <Base href="/new_base" />
         </div>
@@ -76,7 +78,6 @@ test("hydrates only the last title", () => {
   expect(document.head.innerHTML).toBe(snapshot);
   dispose();
   removeScript();
-  document.head.innerHTML = "";
 });
 
 test("mounts and unmounts title", () => {
@@ -107,7 +108,7 @@ test("mounts and unmounts title", () => {
 test("hydrates and unmounts title", () => {
   hydrationScript();
   let div = document.createElement("div");
-  document.head.innerHTML = `<title data-sm="0-0-0-0">Title 3</title>`;
+  document.head.innerHTML = `<title data-sm="0-0-0-0">Static</title>`;
   const snapshot1 = "<title>Static</title>";
   const snapshot2 = "<title>Dynamic</title>";
   const [visible, setVisible] = createSignal(false);
@@ -129,7 +130,6 @@ test("hydrates and unmounts title", () => {
   setVisible(false);
   expect(document.head.innerHTML).toBe(snapshot1);
   dispose();
-  document.head.innerHTML = "";
   removeScript();
 });
 
@@ -163,7 +163,6 @@ test("switches between titles", async () => {
     div
   );
 
-  await Comp1.preload();
   await new Promise(resolve => setTimeout(resolve, 1000));
   expect(document.head.innerHTML).toBe(snapshot1);
   setVisible(false);

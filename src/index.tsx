@@ -1,84 +1,143 @@
 import {
-  createSignal,
-  createContext,
-  createComputed,
-  onMount,
-  onCleanup,
-  useContext,
   Component,
-  ParentComponent,
-  JSX,
-  createUniqueId,
   createRenderEffect,
-  createMemo,
-  children
+  createUniqueId,
+  JSX,
+  onCleanup,
+  ParentComponent,
+  useContext
 } from "solid-js";
 import { isServer, spread } from "solid-js/web";
+import { createContext } from "solid-js";
+
+export const MetaContext = createContext<MetaContextType>();
 
 interface TagDescription {
   tag: string;
   props: Record<string, unknown>;
   id: string;
+  name?: string;
+  ref?: Element;
 }
 
-interface MetaContextType {
-  addClientTag: (tag: string, name: string) => number;
+export interface MetaContextType {
+  addClientTag: (tag: TagDescription) => number;
 
-  shouldRenderTag: (tag: string, index: number) => boolean;
+  // shouldRenderTag: (tag: string, index: number) => boolean;
 
-  removeClientTag: (tag: string, index: number) => void;
+  removeClientTag: (tag: TagDescription, index: number) => void;
 
   addServerTag?: (tagDesc: TagDescription) => void;
 }
 
-const MetaContext = createContext<MetaContextType>();
-
 const cascadingTags = ["title", "meta"];
 
-const MetaProvider: ParentComponent<{ tags?: Array<TagDescription> }> = props => {
-  const indices = new Map(),
-    [tags, setTags] = createSignal<{ [k: string]: (string | null)[] }>({});
+const tagProp = (tag: TagDescription) => tag.tag + (tag.name ? `.${tag.name}"` : "");
 
-  // onMount(() => {
-  //   const ssrTags = document.head.querySelectorAll(`[data-sm]`);
-  //   // `forEach` on `NodeList` is not supported in Googlebot, so use a workaround
-  //   Array.prototype.forEach.call(ssrTags, (ssrTag: Node) => ssrTag.parentNode!.removeChild(ssrTag));
-  // });
+const MetaProvider: ParentComponent<{ tags?: Array<TagDescription> }> = props => {
+  const tags = new Map();
+  function getElement(tag: TagDescription) {
+    if (tag.ref) {
+      return tag.ref;
+    }
+
+    let el = document.querySelector(`[data-sm="${tag.id}"]`);
+    if (el) {
+      if (el.tagName.toLowerCase() !== tag.tag) {
+        if (el.parentNode) {
+          // remove the old tag
+          el.parentNode.removeChild(el);
+        }
+        // add the new tag
+        el = document.createElement(tag.tag);
+      }
+      // use the old tag
+      el.removeAttribute("data-sm");
+    } else {
+      // create a new tag
+      el = document.createElement(tag.tag);
+    }
+
+    return el;
+  }
 
   const actions: MetaContextType = {
-    addClientTag: (tag: string, name: string) => {
-      // consider only cascading tags
-      if (cascadingTags.indexOf(tag) !== -1) {
-        setTags(tags => {
-          const names = tags[tag] || [];
-          return { ...tags, [tag]: [...names, name] };
-        });
+    addClientTag: (tag: TagDescription) => {
+      let tagName = tagProp(tag);
+
+      if (cascadingTags.indexOf(tag.tag) !== -1) {
+        //  only cascading tags need to be kept as singletons
+        if (!tags.has(tagName)) {
+          tags.set(tagName, []);
+        }
+
+        let t = tags.get(tagName);
+        let index = t.length;
+
+        let lastVisited = null;
+        for (var i = index - 1; i >= 0; i--) {
+          if (t[i] != null) {
+            lastVisited = t[i];
+            break;
+          }
+        }
+
+        t = [...t, tag];
+
         // track indices synchronously
-        const index = indices.has(tag) ? indices.get(tag) + 1 : 0;
-        indices.set(tag, index);
+        tags.set(tagName, t);
+
+        if (!isServer) {
+          let element = getElement(tag);
+          tag.ref = element;
+
+          spread(element, () => tag.props);
+
+          if (element.parentNode != document.head) {
+            document.head.appendChild(element);
+          }
+
+          if (lastVisited && lastVisited.ref) {
+            document.head!.removeChild(lastVisited.ref);
+          }
+        }
+
         return index;
       }
+
+      if (!isServer) {
+        let element = getElement(tag);
+        tag.ref = element;
+
+        spread(element, () => tag.props);
+
+        if (element.parentNode != document.head) {
+          document.head.appendChild(element);
+        }
+      }
+
       return -1;
     },
 
-    shouldRenderTag: (tag: string, index: number) => {
-      if (cascadingTags.indexOf(tag) !== -1) {
-        const names = tags()[tag];
-        // check if the tag is the last one of similar
-        return names && names.lastIndexOf(names[index]) === index;
-      }
-      return true;
-    },
+    removeClientTag: (tag: TagDescription, index: number) => {
+      const tagName = tagProp(tag);
 
-    removeClientTag: (tag: string, index: number) => {
-      setTags(tags => {
-        const names = tags[tag];
-        if (names) {
-          names[index] = null;
-          return { ...tags, [tag]: names };
+      if (tag.ref) {
+        if (tag.ref.parentNode) {
+          tag.ref.parentNode.removeChild(tag.ref);
         }
-        return tags;
-      });
+
+        const t = tags.get(tagName);
+        if (t) {
+          for (let i = index - 1; i >= 0; i--) {
+            if (t[i] != null) {
+              document.head.appendChild(t[i].ref);
+            }
+          }
+          t[index] = null;
+          tags.set(tagName, t);
+        }
+      }
     }
   };
 
@@ -109,15 +168,18 @@ const MetaProvider: ParentComponent<{ tags?: Array<TagDescription> }> = props =>
 
 const MetaTag = (tag: string, props: { [k: string]: any }) => {
   const id = createUniqueId();
-  console.log(id)
   const c = useContext(MetaContext);
   if (!c) throw new Error("<MetaProvider /> should be in the tree");
-  const { addClientTag, removeClientTag, addServerTag, shouldRenderTag } = c;
 
-  let index = -1;
-  createComputed(() => {
-    index = addClientTag(tag, props.name || props.property);
-    onCleanup(() => removeClientTag(tag, index));
+  const { addClientTag, removeClientTag, addServerTag } = c;
+
+  createHeadTag({
+    tag,
+    props,
+    id,
+    get name() {
+      return props.name || props.property;
+    }
   });
 
   if (isServer) {
@@ -125,53 +187,26 @@ const MetaTag = (tag: string, props: { [k: string]: any }) => {
     return null;
   }
 
-  let el: HTMLElement | null = null;
-  let rendered = false;
-
-  createRenderEffect(() => {
-    el = document.querySelector(`[data-sm="${id}"]`);
-    if (el) {
-      if (el.tagName.toLowerCase() !== tag) {
-        if (el.parentNode) {
-          // remove the old tag
-          el.parentNode.removeChild(el);
-        }
-        // add the new tag
-        el = document.createElement(tag);
-      }
-      // use the old tag
-      el.removeAttribute("data-sm");
-      rendered = true;
-    } else {
-      // create a new tag
-      el = document.createElement(tag);
-    }
-    // update the tag
-    spread(el, () => props);
-    if (tag === "title") {
-      createRenderEffect(() => el.textContent = children(() => props.children)());
-    }
-  });
-
-  const shouldRender = createMemo(() => shouldRenderTag(tag, index));
-
-  createRenderEffect(() => {
-    if (shouldRender() && el && !rendered) {
-      document.head.appendChild(el);
-    }
-
-    onCleanup(() => {
-      if (el && el.parentNode) {
-        document.head.removeChild(el);
-        rendered = false
-      }
-    });
-  });
-
   return null;
 };
 
 export { MetaProvider };
+
+function createHeadTag(tagDesc: {
+  tag: string;
+  props: { [k: string]: any };
+  id: string;
+  name: any;
+}) {
+  const { addClientTag, removeClientTag } = useContext(MetaContext)!;
+
+  createRenderEffect(() => {
+    if (!isServer) {
+      let index = addClientTag(tagDesc);
+      onCleanup(() => removeClientTag(tagDesc, index));
+    }
+  });
+}
 
 export function renderTags(tags: Array<TagDescription>) {
   return tags
