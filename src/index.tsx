@@ -1,5 +1,6 @@
 import {
   Component,
+  createContext,
   createRenderEffect,
   createUniqueId,
   JSX,
@@ -8,7 +9,6 @@ import {
   useContext
 } from "solid-js";
 import { isServer, spread } from "solid-js/web";
-import { createContext } from "solid-js";
 
 export const MetaContext = createContext<MetaContextType>();
 
@@ -23,8 +23,6 @@ interface TagDescription {
 export interface MetaContextType {
   addClientTag: (tag: TagDescription) => number;
 
-  // shouldRenderTag: (tag: string, index: number) => boolean;
-
   removeClientTag: (tag: TagDescription, index: number) => void;
 
   addServerTag?: (tagDesc: TagDescription) => void;
@@ -32,10 +30,11 @@ export interface MetaContextType {
 
 const cascadingTags = ["title", "meta"];
 
-const tagProp = (tag: TagDescription) => tag.tag + (tag.name ? `.${tag.name}"` : "");
+const getTagType = (tag: TagDescription) => tag.tag + (tag.name ? `.${tag.name}"` : "");
 
 const MetaProvider: ParentComponent<{ tags?: Array<TagDescription> }> = props => {
-  const tags = new Map();
+  const cascadedTagInstances = new Map();
+
   function getElement(tag: TagDescription) {
     if (tag.ref) {
       return tag.ref;
@@ -63,29 +62,21 @@ const MetaProvider: ParentComponent<{ tags?: Array<TagDescription> }> = props =>
 
   const actions: MetaContextType = {
     addClientTag: (tag: TagDescription) => {
-      let tagName = tagProp(tag);
+      let tagType = getTagType(tag);
 
       if (cascadingTags.indexOf(tag.tag) !== -1) {
         //  only cascading tags need to be kept as singletons
-        if (!tags.has(tagName)) {
-          tags.set(tagName, []);
+        if (!cascadedTagInstances.has(tagType)) {
+          cascadedTagInstances.set(tagType, []);
         }
 
-        let t = tags.get(tagName);
-        let index = t.length;
+        let instances = cascadedTagInstances.get(tagType);
+        let index = instances.length;
 
-        let lastVisited = null;
-        for (var i = index - 1; i >= 0; i--) {
-          if (t[i] != null) {
-            lastVisited = t[i];
-            break;
-          }
-        }
-
-        t = [...t, tag];
+        instances = [...instances, tag];
 
         // track indices synchronously
-        tags.set(tagName, t);
+        cascadedTagInstances.set(tagType, instances);
 
         if (!isServer) {
           let element = getElement(tag);
@@ -93,10 +84,17 @@ const MetaProvider: ParentComponent<{ tags?: Array<TagDescription> }> = props =>
 
           spread(element, () => tag.props);
 
+          let lastVisited = null;
+          for (var i = index - 1; i >= 0; i--) {
+            if (instances[i] != null) {
+              lastVisited = instances[i];
+              break;
+            }
+          }
+
           if (element.parentNode != document.head) {
             document.head.appendChild(element);
           }
-
           if (lastVisited && lastVisited.ref) {
             document.head!.removeChild(lastVisited.ref);
           }
@@ -120,22 +118,26 @@ const MetaProvider: ParentComponent<{ tags?: Array<TagDescription> }> = props =>
     },
 
     removeClientTag: (tag: TagDescription, index: number) => {
-      const tagName = tagProp(tag);
+      const tagName = getTagType(tag);
 
       if (tag.ref) {
-        if (tag.ref.parentNode) {
-          tag.ref.parentNode.removeChild(tag.ref);
-        }
-
-        const t = tags.get(tagName);
+        const t = cascadedTagInstances.get(tagName);
         if (t) {
-          for (let i = index - 1; i >= 0; i--) {
-            if (t[i] != null) {
-              document.head.appendChild(t[i].ref);
+          if (tag.ref.parentNode) {
+            tag.ref.parentNode.removeChild(tag.ref);
+            for (let i = index - 1; i >= 0; i--) {
+              if (t[i] != null) {
+                document.head.appendChild(t[i].ref);
+              }
             }
           }
+
           t[index] = null;
-          tags.set(tagName, t);
+          cascadedTagInstances.set(tagName, t);
+        } else {
+          if (tag.ref.parentNode) {
+            tag.ref.parentNode.removeChild(tag.ref);
+          }
         }
       }
     }
@@ -171,8 +173,6 @@ const MetaTag = (tag: string, props: { [k: string]: any }) => {
   const c = useContext(MetaContext);
   if (!c) throw new Error("<MetaProvider /> should be in the tree");
 
-  const { addClientTag, removeClientTag, addServerTag } = c;
-
   createHeadTag({
     tag,
     props,
@@ -181,11 +181,6 @@ const MetaTag = (tag: string, props: { [k: string]: any }) => {
       return props.name || props.property;
     }
   });
-
-  if (isServer) {
-    addServerTag!({ tag, props, id });
-    return null;
-  }
 
   return null;
 };
@@ -198,7 +193,7 @@ function createHeadTag(tagDesc: {
   id: string;
   name: any;
 }) {
-  const { addClientTag, removeClientTag } = useContext(MetaContext)!;
+  const { addClientTag, removeClientTag, addServerTag } = useContext(MetaContext)!;
 
   createRenderEffect(() => {
     if (!isServer) {
@@ -206,6 +201,11 @@ function createHeadTag(tagDesc: {
       onCleanup(() => removeClientTag(tagDesc, index));
     }
   });
+
+  if (isServer) {
+    addServerTag!(tagDesc);
+    return null;
+  }
 }
 
 export function renderTags(tags: Array<TagDescription>) {
