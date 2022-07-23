@@ -175,7 +175,7 @@ const MetaTag = (tag: string, props: { [k: string]: any }) => {
   const c = useContext(MetaContext);
   if (!c) throw new Error("<MetaProvider /> should be in the tree");
 
-  createHeadTag({
+  useHead({
     tag,
     props,
     id,
@@ -189,7 +189,7 @@ const MetaTag = (tag: string, props: { [k: string]: any }) => {
 
 export { MetaProvider };
 
-function createHeadTag(tagDesc: {
+export function useHead(tagDesc: {
   tag: string;
   props: { [k: string]: any };
   id: string;
