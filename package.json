@@ -1,5 +1,5 @@
 {
-  "name": "solid-meta",
+  "name": "@solidjs/meta",
   "description": "Write meta tags to the document head",
   "version": "0.28.0",
   "author": "Ryan Carniato",
@@ -7,6 +7,9 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/solidjs/solid-meta"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "type": "module",
   "main": "dist/index.js",

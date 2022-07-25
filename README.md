@@ -2,7 +2,7 @@
   <img width="100%" src="https://assets.solidjs.com/banner?project=Meta&type=core" alt="Solid Meta">
 </p>
 
-# Solid Meta [![npm Version](https://img.shields.io/npm/v/solid-meta.svg?style=flat-square)](https://www.npmjs.org/package/solid-meta)
+# Solid Meta [![npm Version](https://img.shields.io/npm/v/@solidjs/meta.svg?style=flat-square)](https://www.npmjs.org/package/@solidjs/meta)
 
 Asynchronous SSR-ready Document Head management for Solid based on [React Head](https://github.com/tizmagik/react-head)
 
@@ -16,7 +16,7 @@ This module allows you to define `document.head` tags anywhere in your component
 ## Installation
 
 ```sh
-npm i solid-meta
+npm i @solidjs/meta
 ```
 
 ## How it works
@@ -34,7 +34,7 @@ Wrap your app with `<MetaProvider />` on the server, using a `tags[]` array to p
 
 ```js
 import { renderToString } from 'solid-js/web';
-import { MetaProvider, renderTags } from 'solid-meta';
+import { MetaProvider, renderTags } from '@solidjs/meta';
 import App from './App';
 
 // ... within the context of a request ...
@@ -64,7 +64,7 @@ res.send(`
 There is nothing special required on the client, just render one of head tag components whenever you want to inject a tag in the `<head />`.
 
 ```js
-import { MetaProvider, Title, Link, Meta } from 'solid-meta';
+import { MetaProvider, Title, Link, Meta } from '@solidjs/meta';
 
 const App = () => (
   <MetaProvider>
