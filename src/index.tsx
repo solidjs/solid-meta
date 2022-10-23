@@ -84,7 +84,7 @@ const MetaProvider: ParentComponent<{ tags?: Array<TagDescription> }> = props =>
           let element = getElement(tag);
           tag.ref = element;
 
-          spread(element, () => tag.props);
+          spread(element, tag.props);
 
           let lastVisited = null;
           for (var i = index - 1; i >= 0; i--) {
@@ -109,7 +109,7 @@ const MetaProvider: ParentComponent<{ tags?: Array<TagDescription> }> = props =>
         let element = getElement(tag);
         tag.ref = element;
 
-        spread(element, () => tag.props);
+        spread(element, tag.props);
 
         if (element.parentNode != document.head) {
           document.head.appendChild(element);
