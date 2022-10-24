@@ -5,8 +5,7 @@ import {
   createUniqueId,
   JSX,
   onCleanup,
-  ParentComponent,
-  useContext
+  ParentComponent, sharedConfig, useContext
 } from "solid-js";
 import { isServer, spread } from "solid-js/web";
 
@@ -33,6 +32,11 @@ const cascadingTags = ["title", "meta"];
 const getTagType = (tag: TagDescription) => tag.tag + (tag.name ? `.${tag.name}"` : "");
 
 const MetaProvider: ParentComponent<{ tags?: Array<TagDescription> }> = props => {
+  if (!isServer && !sharedConfig.context) {
+    const ssrTags = document.head.querySelectorAll(`[data-sm]`);
+    // `forEach` on `NodeList` is not supported in Googlebot, so use a workaround
+    Array.prototype.forEach.call(ssrTags, (ssrTag: Node) => ssrTag.parentNode!.removeChild(ssrTag));
+  }
   const cascadedTagInstances = new Map();
 
   // TODO: use one element for all tags of the same type, just swap out
