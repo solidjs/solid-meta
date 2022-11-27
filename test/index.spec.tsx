@@ -1,15 +1,41 @@
 /* @jsxImportSource solid-js */
 import { createSignal, lazy } from "solid-js";
 import { hydrate, render, Show } from "solid-js/web";
-import { MetaProvider, Title, Style, Meta, Link, Base } from "../src";
+import { MetaProvider, Title, Style, Meta, Link, Base, JSONLD } from "../src";
 import { hydrationScript, removeScript } from "./hydration_script";
 
 global.queueMicrotask = setImmediate;
 
 test("renders into document.head portal", () => {
   let div = document.createElement("div");
-  const snapshot =
-    '<title>Test title</title><style>body {}</style><style>div {}</style><link href="index.css"><link href="favicon.ico"><meta charset="utf-8"><base href="/new_base">';
+
+  const breadcrumbs = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Books",
+        item: "https://example.com/books"
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Science Fiction",
+        item: "https://example.com/books/sciencefiction"
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: "Award Winners"
+      }
+    ]
+  };
+
+  const snapshotRE =
+    /<title>Test title<\/title><style>body {}<\/style><style>div {}<\/style><link href="index\.css"><link href="favicon\.ico"><meta charset="utf-8"><base href="\/new_base"><script type="application\/ld\+json">(?<json>.*)<\/script>/;
+
   const dispose = render(
     () => (
       <MetaProvider>
@@ -22,12 +48,17 @@ test("renders into document.head portal", () => {
           <Link href="favicon.ico" />
           <Meta charset="utf-8" />
           <Base href="/new_base" />
+          <JSONLD>{breadcrumbs}</JSONLD>
         </div>
       </MetaProvider>
     ),
     div
   );
-  expect(document.head.innerHTML).toBe(snapshot);
+
+  const match = document.head.innerHTML.match(snapshotRE);
+  expect(match).not.toBe(null);
+  expect(JSON.parse(match?.groups!.json as string)).toStrictEqual(breadcrumbs);
+
   dispose();
 });
 

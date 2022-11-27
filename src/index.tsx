@@ -248,3 +248,9 @@ export const Base: Component<JSX.BaseHTMLAttributes<HTMLBaseElement>> = props =>
 export const Stylesheet: Component<
   Omit<JSX.LinkHTMLAttributes<HTMLLinkElement>, "rel">
 > = props => <Link rel="stylesheet" {...props} />;
+
+export const JSONLD: Component<{ children: Record<string, unknown> }> = ({ children }) =>
+  MetaTag("script", {
+    children: JSON.stringify(children),
+    type: "application/ld+json"
+  });
