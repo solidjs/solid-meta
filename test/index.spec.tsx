@@ -57,7 +57,7 @@ test("renders into document.head portal", () => {
 
   const match = document.head.innerHTML.match(snapshotRE);
   expect(match).not.toBe(null);
-  expect(JSON.parse(match?.groups!.json as string)).toStrictEqual(breadcrumbs);
+  expect(JSON.parse(match!.groups!.json)).toStrictEqual(breadcrumbs);
 
   dispose();
 });
