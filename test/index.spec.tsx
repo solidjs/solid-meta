@@ -273,3 +273,38 @@ test("throws error if head tag is rendered without MetaProvider", () => {
     render(() => <Style>{`body {}`}</Style>, div);
   }).toThrowError(/<MetaProvider \/> should be in the tree/);
 });
+
+test("Escaping the title tag", () => {
+  let div = document.createElement("div");
+  const snapshot = '<title>Hello&lt;/title&gt;&lt;script&gt;alert("inject");&lt;/script&gt;&lt;title&gt; World</title>';
+  const dispose = render(
+    () => (
+      <MetaProvider>
+        <div>
+          <Title>{'Hello</title><script>alert("inject");</script><title> World'}</Title>
+        </div>
+      </MetaProvider>
+    ),
+    div
+  );
+  expect(document.head.innerHTML).toBe(snapshot);
+  dispose();
+});
+
+test("Escaping the title meta", () => {
+  let div = document.createElement("div");
+  const snapshot = '<meta content="Text in &quot;quotes&quot;">';
+
+  const dispose = render(
+    () => (
+      <MetaProvider>
+        <div>
+          <Meta content={'Text in "quotes"'} />
+        </div>
+      </MetaProvider>
+    ),
+    div
+  );
+  expect(document.head.innerHTML).toBe(snapshot);
+  dispose();
+});
