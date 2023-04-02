@@ -7,7 +7,7 @@ import {
   onCleanup,
   ParentComponent, sharedConfig, useContext
 } from "solid-js";
-import { isServer, spread } from "solid-js/web";
+import { isServer, spread, escape } from "solid-js/web";
 
 export const MetaContext = createContext<MetaContextType>();
 
@@ -211,28 +211,18 @@ export function useHead(tagDesc: TagDescription) {
   }
 }
 
-function escapeHTML(html: string) {
-  return html.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-}
-
-function escapeString(str: any) {
-  if (typeof str === "string") {
-      return str.replace(/"/g, '&quot;');
-  }
-  return str;
-}
-
 export function renderTags(tags: Array<TagDescription>) {
   return tags
     .map(tag => {
       const keys = Object.keys(tag.props);
-      const props = keys.map(k => (k === "children" ? "" : ` ${k}="${escapeString(tag.props[k])}`)).join("");
+      // @ts-expect-error
+      const props = keys.map(k => (k === "children" ? "" : ` ${k}="${escape(tag.props[k], true)}`)).join("");
       if (tag.props.children) {
             // Tags might contain multiple text children:
             //   <Title>example - {myCompany}</Title>
             const children = Array.isArray(tag.props.children) ? tag.props.children.join("") : tag.props.children;
             if (tag.setting?.escape && typeof children === "string") {
-                return `<${tag.tag} data-sm="${tag.id}"${props}>${escapeHTML(children)}</${tag.tag}>`;
+                return `<${tag.tag} data-sm="${tag.id}"${props}>${escape(children)}</${tag.tag}>`;
             }
             return `<${tag.tag} data-sm="${tag.id}"${props}>${children}</${tag.tag}>`;
         }
