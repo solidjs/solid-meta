@@ -216,7 +216,7 @@ export function renderTags(tags: Array<TagDescription>) {
     .map(tag => {
       const keys = Object.keys(tag.props);
       // @ts-expect-error
-      const props = keys.map(k => (k === "children" ? "" : ` ${k}="${escape(tag.props[k], true)}`)).join("");
+      const props = keys.map(k => (k === "children" ? "" : ` ${k}="${escape(tag.props[k], true)}"`)).join("");
       if (tag.props.children) {
             // Tags might contain multiple text children:
             //   <Title>example - {myCompany}</Title>
