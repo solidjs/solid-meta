@@ -5,7 +5,9 @@ import {
   createUniqueId,
   JSX,
   onCleanup,
-  ParentComponent, sharedConfig, useContext
+  ParentComponent,
+  sharedConfig,
+  useContext
 } from "solid-js";
 import { isServer, spread, escape } from "solid-js/web";
 
@@ -14,7 +16,7 @@ export const MetaContext = createContext<MetaContextType>();
 interface TagDescription {
   tag: string;
   props: Record<string, unknown>;
-  setting?: { escape?: boolean };
+  setting?: { close?: boolean; escape?: boolean };
   id: string;
   name?: string;
   ref?: Element;
@@ -175,7 +177,11 @@ const MetaProvider: ParentComponent<{ tags?: Array<TagDescription> }> = props =>
   return <MetaContext.Provider value={actions}>{props.children}</MetaContext.Provider>;
 };
 
-const MetaTag = (tag: string, props: { [k: string]: any }, setting?: { escape?: boolean }) => {
+const MetaTag = (
+  tag: string,
+  props: { [k: string]: any },
+  setting?: { escape?: boolean; close?: boolean }
+) => {
   const id = createUniqueId();
   const c = useContext(MetaContext);
   if (!c) throw new Error("<MetaProvider /> should be in the tree");
@@ -215,30 +221,36 @@ export function renderTags(tags: Array<TagDescription>) {
   return tags
     .map(tag => {
       const keys = Object.keys(tag.props);
-      // @ts-expect-error
-      const props = keys.map(k => (k === "children" ? "" : ` ${k}="${escape(tag.props[k], true)}"`)).join("");
-      if (tag.props.children) {
-            // Tags might contain multiple text children:
-            //   <Title>example - {myCompany}</Title>
-            const children = Array.isArray(tag.props.children) ? tag.props.children.join("") : tag.props.children;
-            if (tag.setting?.escape && typeof children === "string") {
-                return `<${tag.tag} data-sm="${tag.id}"${props}>${escape(children)}</${tag.tag}>`;
-            }
-            return `<${tag.tag} data-sm="${tag.id}"${props}>${children}</${tag.tag}>`;
-        }
-        return `<${tag.tag} data-sm="${tag.id}"${props}/>`;
+      const props = keys
+        .map(k =>
+          k === "children"
+            ? ""
+            : ` ${k}="${
+                // @ts-expect-error
+                escape(tag.props[k], true)
+              }"`
+        )
+        .join("");
+      const children = tag.props.children;
+      if (tag.setting?.close) {
+        return `<${tag.tag} data-sm="${tag.id}"${props}>${
+          // @ts-expect-error
+          tag.setting?.escape ? escape(children) : children || ""
+        }</${tag.tag}>`;
+      }
+      return `<${tag.tag} data-sm="${tag.id}"${props}/>`;
     })
     .join("");
 }
 
 export const Title: Component<JSX.HTMLAttributes<HTMLTitleElement>> = props =>
-  MetaTag("title", props, { escape: true });
+  MetaTag("title", props, { escape: true, close: true });
 
 export const Style: Component<JSX.StyleHTMLAttributes<HTMLStyleElement>> = props =>
-  MetaTag("style", props);
+  MetaTag("style", props, { close: true });
 
 export const Meta: Component<JSX.MetaHTMLAttributes<HTMLMetaElement>> = props =>
-  MetaTag("meta", props, { escape: true });
+  MetaTag("meta", props);
 
 export const Link: Component<JSX.LinkHTMLAttributes<HTMLLinkElement>> = props =>
   MetaTag("link", props);
