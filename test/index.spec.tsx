@@ -267,6 +267,35 @@ test("renders only last meta with the same property", () => {
   dispose();
 });
 
+test("renders both meta with the same name/property but different other attributes", () => {
+  let div = document.createElement("div");
+  const snapshot =
+    '<meta name="theme-color" media="(prefers-color-scheme: light)" content="#fff"><meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000">';
+  const dispose = render(
+    () => (
+      <MetaProvider>
+        <Meta
+          name="theme-color"
+          // @ts-expect-error TS2322
+          // https://github.com/ryansolid/dom-expressions/issues/273
+          media="(prefers-color-scheme: light)"
+          content="#fff"
+        />
+        <Meta
+          name="theme-color"
+          // @ts-expect-error TS2322
+          // https://github.com/ryansolid/dom-expressions/issues/273
+          media="(prefers-color-scheme: dark)"
+          content="#000"
+        />
+      </MetaProvider>
+    ),
+    div
+  );
+  expect(document.head.innerHTML).toBe(snapshot);
+  dispose();
+});
+
 test("throws error if head tag is rendered without MetaProvider", () => {
   expect(() => {
     let div = document.createElement("div");
