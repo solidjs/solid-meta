@@ -32,7 +32,32 @@ export interface MetaContextType {
 
 const cascadingTags = ["title", "meta"];
 
-const getTagType = (tag: TagDescription) => tag.tag + (tag.name ? `.${tag.name}"` : "");
+// https://html.spec.whatwg.org/multipage/semantics.html#the-title-element
+const titleTagProperties: string[] = [];
+
+const metaTagProperties: string[] =
+  // https://html.spec.whatwg.org/multipage/semantics.html#the-meta-element
+  ["name", "http-equiv", "content", "charset", "media"]
+    // additional properties
+    .concat(["property"]);
+
+const getTagKey = (tag: TagDescription, properties: string[]) => {
+  // pick allowed properties and sort them
+  const tagProps = Object.fromEntries(
+    Object.entries(tag.props)
+      .filter(([k]) => properties.includes(k))
+      .sort()
+  );
+
+  // treat `property` as `name` for meta tags
+  if (Object.hasOwn(tagProps, "name") || Object.hasOwn(tagProps, "property")) {
+    tagProps.name = tagProps.name || tagProps.property;
+    delete tagProps.property;
+  }
+
+  // concat tag name and properties as unique key for this tag
+  return tag.tag + JSON.stringify(tagProps);
+};
 
 const MetaProvider: ParentComponent<{ tags?: Array<TagDescription> }> = props => {
   if (!isServer && !sharedConfig.context) {
@@ -71,21 +96,22 @@ const MetaProvider: ParentComponent<{ tags?: Array<TagDescription> }> = props =>
 
   const actions: MetaContextType = {
     addClientTag: (tag: TagDescription) => {
-      let tagType = getTagType(tag);
-
       if (cascadingTags.indexOf(tag.tag) !== -1) {
+        const properties = tag.tag === "title" ? titleTagProperties : metaTagProperties;
+        const tagKey = getTagKey(tag, properties);
+
         //  only cascading tags need to be kept as singletons
-        if (!cascadedTagInstances.has(tagType)) {
-          cascadedTagInstances.set(tagType, []);
+        if (!cascadedTagInstances.has(tagKey)) {
+          cascadedTagInstances.set(tagKey, []);
         }
 
-        let instances = cascadedTagInstances.get(tagType);
+        let instances = cascadedTagInstances.get(tagKey);
         let index = instances.length;
 
         instances = [...instances, tag];
 
         // track indices synchronously
-        cascadedTagInstances.set(tagType, instances);
+        cascadedTagInstances.set(tagKey, instances);
 
         if (!isServer) {
           let element = getElement(tag);
@@ -127,10 +153,11 @@ const MetaProvider: ParentComponent<{ tags?: Array<TagDescription> }> = props =>
     },
 
     removeClientTag: (tag: TagDescription, index: number) => {
-      const tagName = getTagType(tag);
+      const properties = tag.tag === "title" ? titleTagProperties : metaTagProperties;
+      const tagKey = getTagKey(tag, properties);
 
       if (tag.ref) {
-        const t = cascadedTagInstances.get(tagName);
+        const t = cascadedTagInstances.get(tagKey);
         if (t) {
           if (tag.ref.parentNode) {
             tag.ref.parentNode.removeChild(tag.ref);
@@ -142,7 +169,7 @@ const MetaProvider: ParentComponent<{ tags?: Array<TagDescription> }> = props =>
           }
 
           t[index] = null;
-          cascadedTagInstances.set(tagName, t);
+          cascadedTagInstances.set(tagKey, t);
         } else {
           if (tag.ref.parentNode) {
             tag.ref.parentNode.removeChild(tag.ref);
@@ -157,11 +184,11 @@ const MetaProvider: ParentComponent<{ tags?: Array<TagDescription> }> = props =>
       const { tags = [] } = props;
       // tweak only cascading tags
       if (cascadingTags.indexOf(tagDesc.tag) !== -1) {
-        const index = tags.findIndex(prev => {
-          const prevName = prev.props.name || prev.props.property;
-          const nextName = tagDesc.props.name || tagDesc.props.property;
-          return prev.tag === tagDesc.tag && prevName === nextName;
-        });
+        const properties = tagDesc.tag === "title" ? titleTagProperties : metaTagProperties;
+        const tagDescKey = getTagKey(tagDesc, properties);
+        const index = tags.findIndex(
+          prev => prev.tag === tagDesc.tag && getTagKey(prev, properties) === tagDescKey
+        );
         if (index !== -1) {
           tags.splice(index, 1);
         }
