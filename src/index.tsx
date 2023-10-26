@@ -201,7 +201,7 @@ function initServerProvider() {
   };
 }
 
-export const MetaProvider: ParentComponent<{ tags?: Array<TagDescription> }> = props => {
+export const MetaProvider: ParentComponent = props => {
   let e;
   const actions: MetaContextType | undefined = !isServer
     ? initClientProvider()
