@@ -6,6 +6,7 @@
 
 Asynchronous SSR-ready Document Head management for Solid based on [React Head](https://github.com/tizmagik/react-head)
 
+> For Solid 1.8 use 0.29.x or greater.
 > For Solid 1.0 use 0.27.x or greater.
 > For versions of Solid 0.x use 0.26.x.
 
@@ -22,26 +23,23 @@ npm i @solidjs/meta
 ## How it works
 
 1.  You wrap your App with `<MetaProvider />`
-1.  From the server, you pass `tags[]` array to `<MetaProvider />`
-1.  Then call `renderTags(tags)` and include in the `<head />` block of your server template
-1.  To insert head tags within your app, just render one of `<Title />`, `<Meta />`, `<Style />`, `<Link />`, and `<Base />` components as often as needed.
+2.  To insert head tags within your app, just render one of `<Title />`, `<Meta />`, `<Style />`, `<Link />`, and `<Base />` components as often as needed.
+3. One the server if you render the `<head>` element using SolidJS in JSX you are all good. Otherwise use `getAssets` from `solid-js/web` to insert the assets where you want.
 
-On the server, the tags are collected in the `tags[]` array, and then on the client the server-generated tags are removed in favor of the client-rendered tags so that SPAs still work as expected (e.g. in cases where subsequent page loads need to change the head tags).
+On the server, the tags are collected, and then on the client the server-generated tags are removed in favor of the client-rendered tags so that SPAs still work as expected (e.g. in cases where subsequent page loads need to change the head tags).
 
 ### Server setup
 
 Wrap your app with `<MetaProvider />` on the server, using a `tags[]` array to pass down as part of your server-rendered payload. When rendered, the component mutates this array to contain the tags.
 
 ```js
-import { renderToString } from 'solid-js/web';
-import { MetaProvider, renderTags } from '@solidjs/meta';
+import { renderToString, getAssets } from 'solid-js/web';
+import { MetaProvider } from '@solidjs/meta';
 import App from './App';
 
 // ... within the context of a request ...
-
-const tags = []; // mutated during render so you can include in server-rendered template later
 const app = renderToString(() =>
-  <MetaProvider tags={tags}>
+  <MetaProvider>
     <App />
   </MetaProvider>
 );
@@ -50,7 +48,7 @@ res.send(`
   <!doctype html>
   <html>
     <head>
-      ${renderTags(tags)}
+      ${getAssets()}
     </head>
     <body>
       <div id="root">${app}</div>

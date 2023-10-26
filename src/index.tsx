@@ -9,9 +9,16 @@ import {
   sharedConfig,
   useContext
 } from "solid-js";
-import { isServer, spread, escape } from "solid-js/web";
+import { isServer, spread, escape, useAssets, getRequestEvent, ssr } from "solid-js/web";
 
 export const MetaContext = createContext<MetaContextType>();
+
+declare module "solid-js/web" {
+  interface RequestEvent {
+    solidMeta?: MetaContextType;
+  }
+}
+
 
 interface TagDescription {
   tag: string;
@@ -23,11 +30,8 @@ interface TagDescription {
 }
 
 export interface MetaContextType {
-  addClientTag: (tag: TagDescription) => number;
-
-  removeClientTag: (tag: TagDescription, index: number) => void;
-
-  addServerTag?: (tagDesc: TagDescription) => void;
+  addTag: (tag: TagDescription) => number;
+  removeTag: (tag: TagDescription, index: number) => void;
 }
 
 const cascadingTags = ["title", "meta"];
@@ -59,21 +63,20 @@ const getTagKey = (tag: TagDescription, properties: string[]) => {
   return tag.tag + JSON.stringify(tagProps);
 };
 
-const MetaProvider: ParentComponent<{ tags?: Array<TagDescription> }> = props => {
-  if (!isServer && !sharedConfig.context) {
+function initClientProvider() {
+  if (!sharedConfig.context) {
     const ssrTags = document.head.querySelectorAll(`[data-sm]`);
     // `forEach` on `NodeList` is not supported in Googlebot, so use a workaround
     Array.prototype.forEach.call(ssrTags, (ssrTag: Node) => ssrTag.parentNode!.removeChild(ssrTag));
   }
-  const cascadedTagInstances = new Map();
 
+  const cascadedTagInstances = new Map();
   // TODO: use one element for all tags of the same type, just swap out
   // where the props get applied
   function getElement(tag: TagDescription) {
     if (tag.ref) {
       return tag.ref;
     }
-
     let el = document.querySelector(`[data-sm="${tag.id}"]`);
     if (el) {
       if (el.tagName.toLowerCase() !== tag.tag) {
@@ -90,12 +93,11 @@ const MetaProvider: ParentComponent<{ tags?: Array<TagDescription> }> = props =>
       // create a new tag
       el = document.createElement(tag.tag);
     }
-
     return el;
   }
 
-  const actions: MetaContextType = {
-    addClientTag: (tag: TagDescription) => {
+  return {
+    addTag(tag: TagDescription) {
       if (cascadingTags.indexOf(tag.tag) !== -1) {
         const properties = tag.tag === "title" ? titleTagProperties : metaTagProperties;
         const tagKey = getTagKey(tag, properties);
@@ -113,46 +115,41 @@ const MetaProvider: ParentComponent<{ tags?: Array<TagDescription> }> = props =>
         // track indices synchronously
         cascadedTagInstances.set(tagKey, instances);
 
-        if (!isServer) {
-          let element = getElement(tag);
-          tag.ref = element;
-
-          spread(element, tag.props);
-
-          let lastVisited = null;
-          for (var i = index - 1; i >= 0; i--) {
-            if (instances[i] != null) {
-              lastVisited = instances[i];
-              break;
-            }
-          }
-
-          if (element.parentNode != document.head) {
-            document.head.appendChild(element);
-          }
-          if (lastVisited && lastVisited.ref) {
-            document.head!.removeChild(lastVisited.ref);
-          }
-        }
-
-        return index;
-      }
-
-      if (!isServer) {
         let element = getElement(tag);
         tag.ref = element;
 
         spread(element, tag.props);
 
+        let lastVisited = null;
+        for (var i = index - 1; i >= 0; i--) {
+          if (instances[i] != null) {
+            lastVisited = instances[i];
+            break;
+          }
+        }
+
         if (element.parentNode != document.head) {
           document.head.appendChild(element);
         }
+        if (lastVisited && lastVisited.ref) {
+          document.head!.removeChild(lastVisited.ref);
+        }
+
+        return index;
+      }
+
+      let element = getElement(tag);
+      tag.ref = element;
+
+      spread(element, tag.props);
+
+      if (element.parentNode != document.head) {
+        document.head.appendChild(element);
       }
 
       return -1;
     },
-
-    removeClientTag: (tag: TagDescription, index: number) => {
+    removeTag(tag: TagDescription, index: number) {
       const properties = tag.tag === "title" ? titleTagProperties : metaTagProperties;
       const tagKey = getTagKey(tag, properties);
 
@@ -178,10 +175,14 @@ const MetaProvider: ParentComponent<{ tags?: Array<TagDescription> }> = props =>
       }
     }
   };
+}
 
-  if (isServer) {
-    actions.addServerTag = (tagDesc: TagDescription) => {
-      const { tags = [] } = props;
+function initServerProvider() {
+  const tags: Array<TagDescription> = [];
+  useAssets(() => ssr(renderTags(tags)) as any);
+
+  return {
+    addTag(tagDesc: TagDescription) {
       // tweak only cascading tags
       if (cascadingTags.indexOf(tagDesc.tag) !== -1) {
         const properties = tagDesc.tag === "title" ? titleTagProperties : metaTagProperties;
@@ -194,14 +195,20 @@ const MetaProvider: ParentComponent<{ tags?: Array<TagDescription> }> = props =>
         }
       }
       tags.push(tagDesc);
-    };
+      return tags.length;
+    },
+    removeTag(tag: TagDescription, index: number) {}
+  };
+}
 
-    if (Array.isArray(props.tags) === false) {
-      throw Error("tags array should be passed to <MetaProvider /> in node");
-    }
-  }
-
-  return <MetaContext.Provider value={actions}>{props.children}</MetaContext.Provider>;
+export const MetaProvider: ParentComponent<{ tags?: Array<TagDescription> }> = props => {
+  let e;
+  const actions: MetaContextType | undefined = !isServer
+    ? initClientProvider()
+    : (e = getRequestEvent())
+    ? e.solidMeta || (e.solidMeta = initServerProvider())
+    : initServerProvider();
+  return <MetaContext.Provider value={actions!}>{props.children}</MetaContext.Provider>;
 };
 
 const MetaTag = (
@@ -209,15 +216,11 @@ const MetaTag = (
   props: { [k: string]: any },
   setting?: { escape?: boolean; close?: boolean }
 ) => {
-  const id = createUniqueId();
-  const c = useContext(MetaContext);
-  if (!c) throw new Error("<MetaProvider /> should be in the tree");
-
   useHead({
     tag,
     props,
     setting,
-    id,
+    id: createUniqueId(),
     get name() {
       return props.name || props.property;
     }
@@ -226,25 +229,24 @@ const MetaTag = (
   return null;
 };
 
-export { MetaProvider };
-
 export function useHead(tagDesc: TagDescription) {
-  const { addClientTag, removeClientTag, addServerTag } = useContext(MetaContext)!;
+  let c: MetaContextType | undefined;
+  if (isServer) {
+    const event = getRequestEvent();
+    if (event) {
+      c = event.solidMeta || (event.solidMeta = initServerProvider());
+    }
+  }
+  c = c || useContext(MetaContext);
+  if (!c) throw new Error("<MetaProvider /> should be in the tree");
 
   createRenderEffect(() => {
-    if (!isServer) {
-      let index = addClientTag(tagDesc);
-      onCleanup(() => removeClientTag(tagDesc, index));
-    }
+    const index = c!.addTag(tagDesc);
+    onCleanup(() => c!.removeTag(tagDesc, index));
   });
-
-  if (isServer) {
-    addServerTag!(tagDesc);
-    return null;
-  }
 }
 
-export function renderTags(tags: Array<TagDescription>) {
+function renderTags(tags: Array<TagDescription>) {
   return tags
     .map(tag => {
       const keys = Object.keys(tag.props);

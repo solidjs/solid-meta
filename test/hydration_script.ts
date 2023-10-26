@@ -25,15 +25,6 @@ export function hydrationScript() {
         a && !e.completed.has(a) && e.events.push([a, o]);
       })
     ),
-    (e.init = (t, o) => {
-      e.r[t] = [new Promise((e, t) => (o = e)), o];
-    }),
-    (e.set = (t, o, s) => {
-      (s = e.r[t]) && s[1](o), (e.r[t] = [o]);
-    }),
-    (e.unset = t => {
-      delete e.r[t];
-    }),
     (e.load = (t, o) => {
       if ((o = e.r[t])) return o[0];
     });

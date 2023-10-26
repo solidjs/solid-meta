@@ -276,15 +276,11 @@ test("renders both meta with the same name/property but different other attribut
       <MetaProvider>
         <Meta
           name="theme-color"
-          // @ts-expect-error TS2322
-          // https://github.com/ryansolid/dom-expressions/issues/273
           media="(prefers-color-scheme: light)"
           content="#fff"
         />
         <Meta
           name="theme-color"
-          // @ts-expect-error TS2322
-          // https://github.com/ryansolid/dom-expressions/issues/273
           media="(prefers-color-scheme: dark)"
           content="#000"
         />
