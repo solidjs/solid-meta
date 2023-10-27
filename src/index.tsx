@@ -233,9 +233,11 @@ export function useHead(tagDesc: TagDescription) {
   let c: MetaContextType | undefined;
   if (isServer) {
     const event = getRequestEvent();
-    if (event) {
-      c = event.solidMeta || (event.solidMeta = initServerProvider());
-    }
+    c = event && event.solidMeta;
+    // TODO: Consider if we want to support tags above MetaProvider
+    // if (event) {
+    //   c = event.solidMeta || (event.solidMeta = initServerProvider());
+    // }
   }
   c = c || useContext(MetaContext);
   if (!c) throw new Error("<MetaProvider /> should be in the tree");
