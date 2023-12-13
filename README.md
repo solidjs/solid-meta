@@ -6,7 +6,6 @@
 
 Asynchronous SSR-ready Document Head management for Solid based on [React Head](https://github.com/tizmagik/react-head)
 
-> For Solid 1.8 use 0.29.x or greater.
 > For Solid 1.0 use 0.27.x or greater.
 > For versions of Solid 0.x use 0.26.x.
 
