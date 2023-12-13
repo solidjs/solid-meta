@@ -9,7 +9,7 @@ import {
   sharedConfig,
   useContext
 } from "solid-js";
-import { isServer, spread, escape, useAssets, getRequestEvent, ssr } from "solid-js/web";
+import { isServer, spread, escape, useAssets, ssr } from "solid-js/web";
 
 export const MetaContext = createContext<MetaContextType>();
 
@@ -18,7 +18,6 @@ declare module "solid-js/web" {
     solidMeta?: MetaContextType;
   }
 }
-
 
 interface TagDescription {
   tag: string;
@@ -202,11 +201,8 @@ function initServerProvider() {
 }
 
 export const MetaProvider: ParentComponent = props => {
-  let e;
-  const actions: MetaContextType | undefined = !isServer
+  const actions = !isServer
     ? initClientProvider()
-    : (e = getRequestEvent())
-    ? e.solidMeta || (e.solidMeta = initServerProvider())
     : initServerProvider();
   return <MetaContext.Provider value={actions!}>{props.children}</MetaContext.Provider>;
 };
@@ -230,16 +226,7 @@ const MetaTag = (
 };
 
 export function useHead(tagDesc: TagDescription) {
-  let c: MetaContextType | undefined;
-  if (isServer) {
-    const event = getRequestEvent();
-    c = event && event.solidMeta;
-    // TODO: Consider if we want to support tags above MetaProvider
-    // if (event) {
-    //   c = event.solidMeta || (event.solidMeta = initServerProvider());
-    // }
-  }
-  c = c || useContext(MetaContext);
+  const c = useContext(MetaContext);
   if (!c) throw new Error("<MetaProvider /> should be in the tree");
 
   createRenderEffect(() => {
