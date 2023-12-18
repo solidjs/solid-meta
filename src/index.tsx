@@ -13,12 +13,6 @@ import { isServer, spread, escape, useAssets, ssr } from "solid-js/web";
 
 export const MetaContext = createContext<MetaContextType>();
 
-declare module "solid-js/web" {
-  interface RequestEvent {
-    solidMeta?: MetaContextType;
-  }
-}
-
 interface TagDescription {
   tag: string;
   props: Record<string, unknown>;
