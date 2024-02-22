@@ -124,7 +124,7 @@ function initClientProvider() {
         if (element.parentNode != document.head) {
           document.head.appendChild(element);
         }
-        if (lastVisited && lastVisited.ref) {
+        if (lastVisited && lastVisited.ref && lastVisited.ref.parentNode) {
           document.head!.removeChild(lastVisited.ref);
         }
 
