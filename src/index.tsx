@@ -245,10 +245,10 @@ function renderTags(tags: Array<TagDescription>) {
         .join("");
 
       let children = tag.props.children;
-      // check if children is an array of strings
-      // in Server Side Rendering, strings are concatenated with comma which is not what we want
-      // we should join them manually instead
-      if (Array.isArray(children) && children.every(child => typeof child === "string")) {
+
+      if (Array.isArray(children)) {
+        // in JavaScript, strings are concatenated with comma which is not what we want
+        // we should join them manually instead
         children = children.join("");
       }
       if (tag.setting?.close) {
