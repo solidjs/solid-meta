@@ -243,7 +243,14 @@ function renderTags(tags: Array<TagDescription>) {
               }"`
         )
         .join("");
-      const children = tag.props.children;
+
+      let children = tag.props.children;
+      // check if children is an array of strings
+      // in Server Side Rendering, strings are concatenated with comma which is not what we want
+      // we should join them manually instead
+      if (Array.isArray(children) && children.every(child => typeof child === "string")) {
+        children = children.join("");
+      }
       if (tag.setting?.close) {
         return `<${tag.tag} data-sm="${tag.id}"${props}>${
           // @ts-expect-error
