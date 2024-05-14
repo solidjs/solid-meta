@@ -27,11 +27,50 @@ npm i @solidjs/meta
 
 On the server, the tags are collected, and then on the client the server-generated tags are removed in favor of the client-rendered tags so that SPAs still work as expected (e.g. in cases where subsequent page loads need to change the head tags).
 
+
+> [!IMPORTANT]
+> Be sure to avoid adding any normal `<title />` tags in any server files (be it `entry-server.jsx|tsx` in SolidStart projects or inside your server file), as they would override the functionality of `@solid/meta`!
+
+
+### SolidStart setup
+
+1. Wrap your app with `<MetaProvider />` inside of the `root` of the `<Router />` component.
+2. You can optionally provide a `<title />` fallback by providing a `<Title />` component inside of `<MetaProvider />`.
+
+#### `app.jsx` / `app.tsx`
+```jsx
+// @refresh reload
+import { MetaProvider, Title } from "@solidjs/meta";
+import { Router } from "@solidjs/router";
+import { FileRoutes } from "@solidjs/start";
+import { Suspense } from "solid-js";
+import "./app.css";
+
+export default function App() {
+  return (
+    <Router
+      root={props => (
+        <MetaProvider>
+          <Title>SolidStart - Basic</Title>
+          <a href="/">Index</a>
+          <a href="/about">About</a>
+          <Suspense>{props.children}</Suspense>
+        </MetaProvider>
+      )}
+    >
+      <FileRoutes />
+    </Router>
+  );
+}
+```
+
+---
+
 ### Server setup
 
 Wrap your app with `<MetaProvider />` on the server, using a `tags[]` array to pass down as part of your server-rendered payload. When rendered, the component mutates this array to contain the tags.
 
-```js
+```jsx
 import { renderToString, getAssets } from 'solid-js/web';
 import { MetaProvider } from '@solidjs/meta';
 import App from './App';
@@ -60,7 +99,7 @@ res.send(`
 
 There is nothing special required on the client, just render one of head tag components whenever you want to inject a tag in the `<head />`.
 
-```js
+```jsx
 import { MetaProvider, Title, Link, Meta } from '@solidjs/meta';
 
 const App = () => (
