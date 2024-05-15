@@ -243,7 +243,14 @@ function renderTags(tags: Array<TagDescription>) {
               }"`
         )
         .join("");
-      const children = tag.props.children;
+
+      let children = tag.props.children;
+
+      if (Array.isArray(children)) {
+        // in JavaScript, strings are concatenated with comma which is not what we want
+        // we should join them manually instead
+        children = children.join("");
+      }
       if (tag.setting?.close) {
         return `<${tag.tag} data-sm="${tag.id}"${props}>${
           // @ts-expect-error
