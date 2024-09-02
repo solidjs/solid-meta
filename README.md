@@ -23,7 +23,7 @@ npm i @solidjs/meta
 
 1.  You wrap your App with `<MetaProvider />`
 2.  To insert head tags within your app, just render one of `<Title />`, `<Meta />`, `<Style />`, `<Link />`, and `<Base />` components as often as needed.
-3. One the server if you render the `<head>` element using SolidJS in JSX you are all good. Otherwise use `getAssets` from `solid-js/web` to insert the assets where you want.
+3. On the server, if you render the `<head>` element using SolidJS in JSX, you are all good. Otherwise use `getAssets` from `solid-js/web` to insert the assets where you want.
 
 On the server, the tags are collected, and then on the client the server-generated tags are removed in favor of the client-rendered tags so that SPAs still work as expected (e.g. in cases where subsequent page loads need to change the head tags).
 
