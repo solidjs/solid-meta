@@ -155,6 +155,7 @@ function initClientProvider() {
             for (let i = index - 1; i >= 0; i--) {
               if (t[i] != null) {
                 document.head.appendChild(t[i].ref);
+                break;
               }
             }
           }

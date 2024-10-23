@@ -89,6 +89,35 @@ test("unmount middle child, should show only the last title", () => {
   dispose();
 });
 
+test("unmount last child, should show only the second last title", () => {
+  let div = document.createElement("div");
+  const snapshot1 = "<title>Title 3</title>";
+  const snapshot2 = "<title>Title 2</title>";
+  const [visible, setVisible] = createSignal(true);
+  const dispose = render(
+    () => (
+      <MetaProvider>
+        <div>
+          <Title>Title 1</Title>
+        </div>
+        <div>
+          <Title>Title 2</Title>
+        </div>
+        <Show when={visible()}>
+          <div>
+            <Title>Title 3</Title>
+          </div>
+        </Show>
+      </MetaProvider>
+    ),
+    div
+  );
+  expect(document.head.innerHTML).toBe(snapshot1);
+  setVisible(false);
+  expect(document.head.innerHTML).toBe(snapshot2);
+  dispose();
+});
+
 test("hydrates only the last title", () => {
   hydrationScript();
   let div = document.createElement("div");
