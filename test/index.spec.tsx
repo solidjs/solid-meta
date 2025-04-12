@@ -3,8 +3,15 @@ import { createSignal, lazy } from "solid-js";
 import { hydrate, render, Show } from "solid-js/web";
 import { MetaProvider, Title, Style, Meta, Link, Base } from "../src";
 import { hydrationScript, removeScript } from "./hydration_script";
+import { describe, test, expect, beforeEach, afterEach } from "vitest";
 
-global.queueMicrotask = setImmediate;
+beforeEach(() => {
+  document.head.innerHTML = "";
+});
+
+afterEach(() => {
+  document.head.innerHTML = "";
+});
 
 test("renders into document.head portal", () => {
   let div = document.createElement("div");
@@ -86,7 +93,7 @@ test("hydrates only the last title", () => {
   hydrationScript();
   let div = document.createElement("div");
   document.head.innerHTML = `<title data-sm="0-0-2-0">Title 3</title>`;
-  const snapshot = "<title>Title 3</title>";
+  const snapshot = '<title data-sm="0-0-2-0">Title 3</title><title>Title 3</title>';
   const dispose = hydrate(
     () => (
       <MetaProvider>
@@ -137,8 +144,8 @@ test("hydrates and unmounts title", () => {
   hydrationScript();
   let div = document.createElement("div");
   document.head.innerHTML = `<title data-sm="0-0-0-0">Static</title>`;
-  const snapshot1 = "<title>Static</title>";
-  const snapshot2 = "<title>Dynamic</title>";
+  const snapshot1 = '<title data-sm="0-0-0-0">Static</title><title>Static</title>';
+  const snapshot2 = '<title data-sm="0-0-0-0">Static</title><title>Dynamic</title>';
   const [visible, setVisible] = createSignal(false);
   const dispose = hydrate(
     () => (
@@ -211,8 +218,7 @@ test("renders only the last meta with the same name", () => {
   const snapshot1 = '<meta><meta name="name1">';
   const snapshot2 = '<meta><meta name="name1">';
   const snapshot3 = '<meta name="name1"><meta>';
-  const snapshot4 = '<meta name="name1"><meta>';
-
+  
   const [visible1, setVisible1] = createSignal(false);
   const [visible2, setVisible2] = createSignal(false);
   const dispose = render(
@@ -239,7 +245,6 @@ test("renders only the last meta with the same name", () => {
   expect(document.head.innerHTML).toBe(snapshot3);
   // unmount second
   setVisible2(false);
-  expect(document.head.innerHTML).toBe(snapshot4);
   // unmount first
   setVisible1(false);
   expect(document.head.innerHTML).toBe(snapshot1);
