@@ -1,5 +1,5 @@
 /* @jsxImportSource solid-js */
-import { createSignal, lazy } from "solid-js";
+import { createSignal, getOwner, lazy } from "solid-js";
 import { hydrate, render, Show } from "solid-js/web";
 import { MetaProvider, Title, Style, Meta, Link, Base } from "../src";
 import { hydrationScript, removeScript } from "./hydration_script";
@@ -302,6 +302,30 @@ test("throws error if head tag is rendered without MetaProvider", () => {
     let div = document.createElement("div");
     render(() => <Style>{`body {}`}</Style>, div);
   }).toThrowError(/<MetaProvider \/> should be in the tree/);
+});
+
+test("doesn't create any effect on removal", () => {
+  let div = document.createElement("div");
+
+  const [ show, setShow ] = createSignal(true);
+  const showAndTest = () => {
+    expect(getOwner()?.owner).toBeTruthy();
+    return show();
+  };
+
+  const dispose = render(
+    () => (
+      <MetaProvider>
+        <Show when={show()}>
+          <Title>Something {showAndTest()} that forces the Solid compiler to create a memo here</Title>
+        </Show>
+      </MetaProvider>
+    ),
+    div
+  );
+
+  setShow(false);
+  dispose();
 });
 
 test("Escaping the title tag", () => {
