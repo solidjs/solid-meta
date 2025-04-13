@@ -41,8 +41,9 @@ const metaTagProperties: string[] =
 const getTagKey = (tag: TagDescription, properties: string[]) => {
   // pick allowed properties and sort them
   const tagProps = Object.fromEntries(
-    Object.entries(tag.props)
-      .filter(([k]) => properties.includes(k))
+    properties
+      .filter(k => k in tag.props)
+      .map(k => [k, tag.props[k]])
       .sort()
   );
 
