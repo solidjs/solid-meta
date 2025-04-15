@@ -247,7 +247,7 @@ test("renders only the last meta with the same name", () => {
   const snapshot1 = '<meta><meta name="name1">';
   const snapshot2 = '<meta><meta name="name1">';
   const snapshot3 = '<meta name="name1"><meta>';
-  
+
   const [visible1, setVisible1] = createSignal(false);
   const [visible2, setVisible2] = createSignal(false);
   const dispose = render(
@@ -308,16 +308,8 @@ test("renders both meta with the same name/property but different other attribut
   const dispose = render(
     () => (
       <MetaProvider>
-        <Meta
-          name="theme-color"
-          media="(prefers-color-scheme: light)"
-          content="#fff"
-        />
-        <Meta
-          name="theme-color"
-          media="(prefers-color-scheme: dark)"
-          content="#000"
-        />
+        <Meta name="theme-color" media="(prefers-color-scheme: light)" content="#fff" />
+        <Meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000" />
       </MetaProvider>
     ),
     div
@@ -336,7 +328,7 @@ test("throws error if head tag is rendered without MetaProvider", () => {
 test("doesn't create any effect on removal", () => {
   let div = document.createElement("div");
 
-  const [ show, setShow ] = createSignal(true);
+  const [show, setShow] = createSignal(true);
   const showAndTest = () => {
     expect(getOwner()?.owner).toBeTruthy();
     return show();
@@ -346,7 +338,9 @@ test("doesn't create any effect on removal", () => {
     () => (
       <MetaProvider>
         <Show when={show()}>
-          <Title>Something {showAndTest()} that forces the Solid compiler to create a memo here</Title>
+          <Title>
+            Something {showAndTest()} that forces the Solid compiler to create a memo here
+          </Title>
         </Show>
       </MetaProvider>
     ),
@@ -359,7 +353,8 @@ test("doesn't create any effect on removal", () => {
 
 test("Escaping the title tag", () => {
   let div = document.createElement("div");
-  const snapshot = '<title>Hello&lt;/title&gt;&lt;script&gt;alert("inject");&lt;/script&gt;&lt;title&gt; World</title>';
+  const snapshot =
+    '<title>Hello&lt;/title&gt;&lt;script&gt;alert("inject");&lt;/script&gt;&lt;title&gt; World</title>';
   const dispose = render(
     () => (
       <MetaProvider>
