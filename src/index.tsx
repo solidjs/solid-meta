@@ -13,9 +13,9 @@ import { isServer, spread, escape, useAssets, ssr } from "solid-js/web";
 
 export const MetaContext = createContext<MetaContextType>();
 
-interface TagDescription {
-  tag: string;
-  props: Record<string, unknown>;
+interface TagDescription<T extends keyof JSX.HTMLElementTags = keyof JSX.HTMLElementTags> {
+  tag: T;
+  props: props: JSX.HTMLElementTags[T];;
   setting?: { close?: boolean; escape?: boolean };
   id: string;
   name?: string;
@@ -221,7 +221,7 @@ const MetaTag = (
   return null;
 };
 
-export function useHead(tagDesc: TagDescription) {
+export function useHead<T extends keyof JSX.HTMLElementTags>(tagDesc: TagDescription<T>) {
   const c = useContext(MetaContext);
   if (!c) throw new Error("<MetaProvider /> should be in the tree");
 
