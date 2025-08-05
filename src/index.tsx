@@ -9,7 +9,7 @@ import {
   sharedConfig,
   useContext
 } from "solid-js";
-import { isServer, spread, escape, useAssets, ssr } from "solid-js/web";
+import { escape, isServer, spread, ssr, useAssets } from "solid-js/web";
 
 export const MetaContext = createContext<MetaContextType>();
 
@@ -232,6 +232,13 @@ export function useHead(tagDesc: TagDescription) {
 }
 
 function renderTags(tags: Array<TagDescription>) {
+  function flattenChildren(children: unknown): unknown | string {
+    if (Array.isArray(children)) {
+      return children.map(child => flattenChildren(child)).join("");
+    }
+    return children;
+  }
+
   return tags
     .map(tag => {
       const keys = Object.keys(tag.props);
@@ -246,13 +253,8 @@ function renderTags(tags: Array<TagDescription>) {
         )
         .join("");
 
-      let children = tag.props.children;
+      const children = flattenChildren(tag.props.children);
 
-      if (Array.isArray(children)) {
-        // in JavaScript, strings are concatenated with comma which is not what we want
-        // we should join them manually instead
-        children = children.join("");
-      }
       if (tag.setting?.close) {
         return `<${tag.tag} data-sm="${tag.id}"${props}>${
           // @ts-expect-error
