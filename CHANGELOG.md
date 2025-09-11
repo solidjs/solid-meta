@@ -1,5 +1,11 @@
 # @solidjs/meta
 
+## 0.29.7
+
+### Patch Changes
+
+- 3028873: Refactor `renderTags` to use `flattenChildren` for processing nested children.
+
 ## 0.29.6
 
 ### Patch Changes
