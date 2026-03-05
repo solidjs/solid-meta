@@ -4,12 +4,11 @@ import {
   createRenderEffect,
   createUniqueId,
   JSX,
-  onCleanup,
   ParentComponent,
   sharedConfig,
   useContext
 } from "solid-js";
-import { escape, isServer, spread, ssr, useAssets } from "solid-js/web";
+import { escape, isServer, spread, ssr, useAssets } from "@solidjs/web";
 
 export const MetaContext = createContext<MetaContextType>();
 
@@ -58,7 +57,7 @@ const getTagKey = (tag: TagDescription, properties: string[]) => {
 };
 
 function initClientProvider() {
-  if (!sharedConfig.context) {
+  if (!sharedConfig.hydrating) {
     const ssrTags = document.head.querySelectorAll(`[data-sm]`);
     // `forEach` on `NodeList` is not supported in Googlebot, so use a workaround
     Array.prototype.forEach.call(ssrTags, (ssrTag: Node) => ssrTag.parentNode!.removeChild(ssrTag));
@@ -200,7 +199,7 @@ export const MetaProvider: ParentComponent = props => {
   const actions = !isServer
     ? initClientProvider()
     : initServerProvider();
-  return <MetaContext.Provider value={actions!}>{props.children}</MetaContext.Provider>;
+  return <MetaContext value={actions!}>{props.children}</MetaContext>;
 };
 
 const MetaTag = (
@@ -225,10 +224,13 @@ export function useHead(tagDesc: TagDescription) {
   const c = useContext(MetaContext);
   if (!c) throw new Error("<MetaProvider /> should be in the tree");
 
-  createRenderEffect(() => {
-    const index = c!.addTag(tagDesc);
-    onCleanup(() => c!.removeTag(tagDesc, index));
-  });
+  createRenderEffect(
+    () => tagDesc,
+    tag => {
+      const index = c!.addTag(tag);
+      return () => c!.removeTag(tag, index);
+    }
+  );
 }
 
 function renderTags(tags: Array<TagDescription>) {
