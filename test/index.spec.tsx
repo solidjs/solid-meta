@@ -1,6 +1,6 @@
 /* @jsxImportSource solid-js */
 import { createSignal, flush, getOwner, lazy } from "solid-js";
-import { hydrate, render, Show } from "@solidjs/web";
+import { hydrate, render, Show, Loading } from "@solidjs/web";
 import { MetaProvider, Title, Style, Meta, Link, Base } from "../src";
 import { hydrationScript, removeScript } from "./hydration_script";
 import { describe, test, expect, beforeEach, afterEach } from "vitest";
@@ -225,9 +225,11 @@ test("switches between titles", async () => {
     () => (
       <MetaProvider>
         <Title>Static</Title>
-        <Show when={visible()} fallback={<Comp2 />}>
-          <Comp1 />
-        </Show>
+        <Loading fallback={null}>
+          <Show when={visible()} fallback={<Comp2 />}>
+            <Comp1 />
+          </Show>
+        </Loading>
       </MetaProvider>
     ),
     div
