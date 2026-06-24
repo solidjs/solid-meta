@@ -6,7 +6,7 @@
     "moduleResolution": "bundler",
     "strict": true,
     "jsx": "preserve",
-    "jsxImportSource": "solid-js"
+    "jsxImportSource": "@solidjs/web"
   },
   "include": [
     "./src"

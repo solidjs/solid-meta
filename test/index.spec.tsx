@@ -1,9 +1,8 @@
-/* @jsxImportSource solid-js */
-import { createSignal, flush, getOwner, lazy } from "solid-js";
-import { hydrate, render, Show, Loading } from "@solidjs/web";
+import { createSignal, flush, getOwner, lazy, Loading, Show } from "solid-js";
+import { hydrate, render } from "@solidjs/web";
 import { MetaProvider, Title, Style, Meta, Link, Base } from "../src";
 import { hydrationScript, removeScript } from "./hydration_script";
-import { describe, test, expect, beforeEach, afterEach } from "vitest";
+import { test, expect, beforeEach, afterEach } from "vitest";
 
 beforeEach(() => {
   document.head.innerHTML = "";

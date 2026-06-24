@@ -1,14 +1,13 @@
 import {
-  Component,
+  type Component,
   createContext,
   createRenderEffect,
   createUniqueId,
-  JSX,
-  ParentComponent,
+  type ParentComponent,
   sharedConfig,
   useContext
 } from "solid-js";
-import { escape, isServer, spread, ssr, useAssets } from "@solidjs/web";
+import { escape, isServer, spread, ssr, useAssets, type JSX } from "@solidjs/web";
 
 export const MetaContext = createContext<MetaContextType>();
 
@@ -191,7 +190,7 @@ function initServerProvider() {
       tags.push(tagDesc);
       return tags.length;
     },
-    removeTag(tag: TagDescription, index: number) {}
+    removeTag(_tag: TagDescription, _index: number) {}
   };
 }
 
@@ -222,13 +221,12 @@ const MetaTag = (
 
 export function useHead(tagDesc: TagDescription) {
   const c = useContext(MetaContext);
-  if (!c) throw new Error("<MetaProvider /> should be in the tree");
 
   createRenderEffect(
     () => tagDesc,
     tag => {
-      const index = c!.addTag(tag);
-      return () => c!.removeTag(tag, index);
+      const index = c.addTag(tag);
+      return () => c.removeTag(tag, index);
     }
   );
 }
