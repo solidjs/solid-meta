@@ -9,10 +9,10 @@ module.exports = {
         [
           "babel-plugin-jsx-dom-expressions",
           {
-            moduleName: "solid-js/web",
+            moduleName: "@solidjs/web",
             contextToCustomElements: true,
             wrapConditionals: true,
-            builtIns: ["For", "Show", "Switch", "Match", "Suspense", "SuspenseList", "Portal"]
+            builtIns: ["For", "Show", "Switch", "Match", "Loading", "Errored", "Portal"]
           }
         ]
       ]

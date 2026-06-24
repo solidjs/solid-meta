@@ -1,9 +1,8 @@
-/* @jsxImportSource solid-js */
-import { createSignal, getOwner, lazy } from "solid-js";
-import { hydrate, render, Show } from "solid-js/web";
+import { createSignal, flush, getOwner, lazy, Loading, Show } from "solid-js";
+import { hydrate, render } from "@solidjs/web";
 import { MetaProvider, Title, Style, Meta, Link, Base } from "../src";
 import { hydrationScript, removeScript } from "./hydration_script";
-import { describe, test, expect, beforeEach, afterEach } from "vitest";
+import { test, expect, beforeEach, afterEach } from "vitest";
 
 beforeEach(() => {
   document.head.innerHTML = "";
@@ -85,6 +84,7 @@ test("unmount middle child, should show only the last title", () => {
   );
   expect(document.head.innerHTML).toBe(snapshot);
   setVisible(false);
+  flush();
   expect(document.head.innerHTML).toBe(snapshot);
   dispose();
 });
@@ -114,6 +114,7 @@ test("unmount last child, should show only the second last title", () => {
   );
   expect(document.head.innerHTML).toBe(snapshot1);
   setVisible(false);
+  flush();
   expect(document.head.innerHTML).toBe(snapshot2);
   dispose();
 });
@@ -163,8 +164,10 @@ test("mounts and unmounts title", () => {
 
   expect(document.head.innerHTML).toBe(snapshot1);
   setVisible(true);
+  flush();
   expect(document.head.innerHTML).toBe(snapshot2);
   setVisible(false);
+  flush();
   expect(document.head.innerHTML).toBe(snapshot1);
   dispose();
 });
@@ -190,8 +193,10 @@ test("hydrates and unmounts title", () => {
 
   expect(document.head.innerHTML).toBe(snapshot1);
   setVisible(true);
+  flush();
   expect(document.head.innerHTML).toBe(snapshot2);
   setVisible(false);
+  flush();
   expect(document.head.innerHTML).toBe(snapshot1);
   dispose();
   removeScript();
@@ -219,9 +224,11 @@ test("switches between titles", async () => {
     () => (
       <MetaProvider>
         <Title>Static</Title>
-        <Show when={visible()} fallback={<Comp2 />}>
-          <Comp1 />
-        </Show>
+        <Loading fallback={null}>
+          <Show when={visible()} fallback={<Comp2 />}>
+            <Comp1 />
+          </Show>
+        </Loading>
       </MetaProvider>
     ),
     div
@@ -230,6 +237,7 @@ test("switches between titles", async () => {
   await new Promise(resolve => setTimeout(resolve, 1));
   expect(document.head.innerHTML).toBe(snapshot1);
   setVisible(false);
+  flush();
   await new Promise(resolve => setTimeout(resolve, 1));
   expect(document.head.innerHTML).toBe(snapshot2);
   dispose();
@@ -268,14 +276,18 @@ test("renders only the last meta with the same name", () => {
   expect(document.head.innerHTML).toBe(snapshot1);
   // mount first
   setVisible1(true);
+  flush();
   expect(document.head.innerHTML).toBe(snapshot2);
   // mount second
   setVisible2(true);
+  flush();
   expect(document.head.innerHTML).toBe(snapshot3);
   // unmount second
   setVisible2(false);
+  flush();
   // unmount first
   setVisible1(false);
+  flush();
   expect(document.head.innerHTML).toBe(snapshot1);
   dispose();
 });
@@ -322,7 +334,7 @@ test("throws error if head tag is rendered without MetaProvider", () => {
   expect(() => {
     let div = document.createElement("div");
     render(() => <Style>{`body {}`}</Style>, div);
-  }).toThrowError(/<MetaProvider \/> should be in the tree/);
+  }).toThrowError(/Context must either be created with a default value/);
 });
 
 test("doesn't create any effect on removal", () => {
@@ -330,7 +342,7 @@ test("doesn't create any effect on removal", () => {
 
   const [show, setShow] = createSignal(true);
   const showAndTest = () => {
-    expect(getOwner()?.owner).toBeTruthy();
+    expect(getOwner()?._parent).toBeTruthy();
     return show();
   };
 
@@ -348,6 +360,7 @@ test("doesn't create any effect on removal", () => {
   );
 
   setShow(false);
+  flush();
   dispose();
 });
 
