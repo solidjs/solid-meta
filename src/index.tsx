@@ -253,12 +253,15 @@ function renderTags(tags: Array<TagDescription>) {
         )
         .join("");
 
-      const children = flattenChildren(tag.props.children);
+      // nullish children would otherwise be interpolated into the tag as the
+      // literal string "undefined" / "null", since `escape` passes non-strings
+      // through untouched
+      const children = flattenChildren(tag.props.children) ?? "";
 
       if (tag.setting?.close) {
         return `<${tag.tag} data-sm="${tag.id}"${props}>${
           // @ts-expect-error
-          tag.setting?.escape ? escape(children) : children || ""
+          tag.setting?.escape ? escape(children) : children
         }</${tag.tag}>`;
       }
       return `<${tag.tag} data-sm="${tag.id}"${props}/>`;
