@@ -1,0 +1,10 @@
+{
+  "mode": "pre",
+  "tag": "next",
+  "initialVersions": {
+    "@solidjs/meta": "0.30.0-next.0"
+  },
+  "changesets": [
+    "solid-meta-1-0"
+  ]
+}
