@@ -11,9 +11,6 @@ import {
 } from "solid-js";
 import { useHead, HeadTag, JSX } from "@solidjs/web";
 
-export { useHead } from "@solidjs/web";
-export type { HeadTag } from "@solidjs/web";
-
 type GroupRegister = (tag: HeadTag) => void;
 
 // Established by <Head> so tag components rendered within its extent join

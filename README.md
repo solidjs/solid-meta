@@ -128,11 +128,12 @@ the head markup instead.
 
 ### Escape hatch: `useHead`
 
-The core primitive is re-exported for library authors (routers, CSS-in-JS
-collectors, SEO policy layers):
+The components are a thin layer over the core `useHead` primitive in
+`@solidjs/web` — library authors (routers, CSS-in-JS collectors, SEO policy
+layers) can use it directly; it's the same registry:
 
 ```jsx
-import { useHead } from "@solidjs/meta"; // same as from "@solidjs/web"
+import { useHead } from "@solidjs/web";
 
 useHead({ tag: "meta", props: { name: "description", content: () => desc() } });
 useHead([ /* an array is a group — one replacement set */ ]);
@@ -151,8 +152,9 @@ useHead(() => tags()); // a function is a reactive group
    `name`/`property`/`http-equiv` (+ `media`) with last-wins. For deliberate
    sets (multiple `og:image`s), wrap them in `<Head>`; to fork an identity,
    give each tag a distinct `key`.
-4. **`useHead` changed shape.** The 0.x `useHead(TagDescription)` shim is
-   gone; the re-exported core `useHead` takes `HeadTag | HeadTag[] |
+4. **`useHead` moved to core and changed shape.** The 0.x
+   `useHead(TagDescription)` is gone from `@solidjs/meta`; import the core
+   `useHead` from `@solidjs/web` instead — it takes `HeadTag | HeadTag[] |
    (() => HeadTag[])` descriptors (`{ tag, props, key? }`).
 5. **Removed niceties:**
    - `escape` prop — everything is escaped now; text applies via

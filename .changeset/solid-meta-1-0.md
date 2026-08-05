@@ -16,8 +16,9 @@ Solid Meta 1.0: rebuilt as a thin layer over Solid 2.0's `useHead` primitive.
   with last-committed-wins and restore-on-disposal, `key` to override
   identity, streaming-correct SSR patches that ride suspense reveals, and
   flicker-free hydration adoption.
-- **Removed**: the legacy `useHead(TagDescription)` shim (the re-exported
-  core `useHead(HeadTag | HeadTag[] | () => HeadTag[])` replaces it),
+- **Removed**: the legacy `useHead(TagDescription)` shim (the core
+  `useHead(HeadTag | HeadTag[] | () => HeadTag[])` in `@solidjs/web`
+  replaces it),
   `escape` prop (everything is escaped; text is applied via `textContent`),
   `ref`/event handlers on head tags, and client-dynamic `<Base>` /
   `<Meta charset>` (shell-only on the server, ignored with a dev warning on

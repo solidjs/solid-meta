@@ -1,6 +1,6 @@
 import { createSignal, flush, Show } from "solid-js";
-import { hydrate, render } from "@solidjs/web";
-import { Head, Link, Meta, Script, Style, Stylesheet, Title, useHead } from "../src";
+import { hydrate, render, useHead } from "@solidjs/web";
+import { Head, Link, Meta, Script, Style, Stylesheet, Title } from "../src";
 import { hydrationScript, removeScript } from "./hydration_script";
 import { describe, test, expect, beforeAll, vi } from "vitest";
 
@@ -288,7 +288,7 @@ describe("head tag components", () => {
     vi.useRealTimers();
   });
 
-  test("useHead re-export registers an array as one group", async () => {
+  test("core useHead interop: an array registers as one group", async () => {
     const div = document.createElement("div");
     const dispose = render(() => {
       useHead([
