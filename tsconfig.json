@@ -4,9 +4,7 @@
     "declaration": true,
     "target": "esnext",
     "moduleResolution": "bundler",
-    "strict": true,
-    "jsx": "preserve",
-    "jsxImportSource": "solid-js"
+    "strict": true
   },
   "include": [
     "./src"

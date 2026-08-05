@@ -1,7 +1,7 @@
 {
   "name": "@solidjs/meta",
   "description": "Write meta tags to the document head",
-  "version": "0.30.0-next.0",
+  "version": "1.0.0-next.0",
   "author": "Ryan Carniato",
   "license": "MIT",
   "repository": {
@@ -14,10 +14,7 @@
   "type": "module",
   "main": "dist/index.js",
   "exports": {
-    ".": {
-      "solid": "./dist/index.jsx",
-      "default": "./dist/index.js"
-    }
+    ".": "./dist/index.js"
   },
   "types": "dist/index.d.ts",
   "files": [
@@ -27,7 +24,7 @@
   "scripts": {
     "prebuild": "npm run clean",
     "clean": "rimraf dist/",
-    "build": "tsc && babel src/index.tsx --out-file dist/index.js",
+    "build": "tsc",
     "test": "npm run test:unit && npm run test:types",
     "test:unit": "vitest run",
     "test:watch": "vitest",
@@ -35,26 +32,20 @@
     "release": "pnpm build && changeset publish"
   },
   "peerDependencies": {
-    "solid-js": ">=2.0.0-beta.0 <2.0.0",
-    "@solidjs/web": ">=2.0.0-beta.0 <2.0.0"
+    "solid-js": ">=2.0.0-beta.30 <2.0.0",
+    "@solidjs/web": ">=2.0.0-beta.31 <2.0.0"
   },
   "devDependencies": {
-    "@babel/cli": "^7.27.0",
-    "@babel/core": "7.26.10",
-    "@babel/preset-env": "7.26.9",
-    "@babel/preset-typescript": "7.27.0",
     "@changesets/cli": "^2.28.1",
-    "@rollup/plugin-babel": "^6.0.4",
-    "@solidjs/web": "2.0.0-beta.3",
+    "@solidjs/web": "2.0.0-beta.31",
     "@testing-library/jest-dom": "^6.6.3",
     "@types/jest": "^29.5.14",
     "@vitest/browser": "^3.1.1",
-    "babel-preset-solid": "2.0.0-beta.3",
     "jsdom": "^26.0.0",
     "rimraf": "^6.0.1",
-    "solid-js": "2.0.0-beta.3",
+    "solid-js": "2.0.0-beta.30",
     "typescript": "5.8.3",
-    "vite-plugin-solid": "^3.0.0-next.2",
+    "vite-plugin-solid": "^3.0.0-next.21",
     "vitest": "^3.1.1"
   }
 }

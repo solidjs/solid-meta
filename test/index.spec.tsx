@@ -1,402 +1,449 @@
-/* @jsxImportSource solid-js */
-import { createSignal, flush, getOwner, lazy } from "solid-js";
-import { hydrate, render, Show, Loading } from "@solidjs/web";
-import { MetaProvider, Title, Style, Meta, Link, Base } from "../src";
+import { createSignal, flush, Show } from "solid-js";
+import { hydrate, render } from "@solidjs/web";
+import { Head, Link, Meta, Script, Style, Stylesheet, Title, useHead } from "../src";
 import { hydrationScript, removeScript } from "./hydration_script";
-import { describe, test, expect, beforeEach, afterEach } from "vitest";
+import { describe, test, expect, beforeAll, vi } from "vitest";
 
-beforeEach(() => {
-  document.head.innerHTML = "";
+// The head registry applies on a microtask and is a module singleton, so
+// tests share document.head deliberately: every test disposes its roots and
+// awaits the flush so it leaves the registry empty. The static fallback
+// title is installed once and stays for the whole file.
+const tick = () => Promise.resolve();
+
+beforeAll(() => {
+  document.head.innerHTML = "<title>Static</title>";
 });
 
-afterEach(() => {
-  document.head.innerHTML = "";
-});
-
-test("renders into document.head portal", () => {
-  let div = document.createElement("div");
-  const snapshot =
-    '<title>Test title</title><style>body {}</style><style>div {}</style><link href="index.css"><link href="favicon.ico"><meta charset="utf-8"><base href="/new_base">';
-  const dispose = render(
-    () => (
-      <MetaProvider>
+describe("head tag components", () => {
+  test("renders head tags into document.head and removes them on dispose", async () => {
+    const div = document.createElement("div");
+    const dispose = render(
+      () => (
         <div>
           Yes render
           <Title>Test title</Title>
           <Style>{`body {}`}</Style>
-          <Style>{`div {}`}</Style>
-          <Link href="index.css" />
-          <Link href="favicon.ico" />
-          <Meta charset="utf-8" />
-          <Base href="/new_base" />
+          <Meta name="description" content="desc" />
+          <Link rel="canonical" href="https://solidjs.com/" />
         </div>
-      </MetaProvider>
-    ),
-    div
-  );
-  expect(document.head.innerHTML).toBe(snapshot);
-  dispose();
-});
+      ),
+      div
+    );
+    await tick();
+    expect(document.title).toBe("Test title");
+    expect(document.head.querySelector("style")!.textContent).toBe("body {}");
+    const meta = document.head.querySelector('meta[name="description"]')!;
+    expect(meta.getAttribute("content")).toBe("desc");
+    expect(meta.getAttribute("data-dh")).toBe("meta:name:description");
+    expect(document.head.querySelector('link[rel="canonical"]')!.getAttribute("href")).toBe(
+      "https://solidjs.com/"
+    );
 
-test("renders only the last title", () => {
-  let div = document.createElement("div");
-  const snapshot = "<title>Title 3</title>";
-  const dispose = render(
-    () => (
-      <MetaProvider>
-        <div>
-          <Title>Title 1</Title>
-        </div>
-        <div>
-          <Title>Title 2</Title>
-        </div>
-        <div>
-          <Title>Title 3</Title>
-        </div>
-      </MetaProvider>
-    ),
-    div
-  );
-  expect(document.head.innerHTML).toBe(snapshot);
-  dispose();
-});
+    dispose();
+    await tick();
+    expect(document.title).toBe("Static");
+    expect(document.head.querySelector("style")).toBe(null);
+    expect(document.head.querySelector('meta[name="description"]')).toBe(null);
+    expect(document.head.querySelector('link[rel="canonical"]')).toBe(null);
+  });
 
-test("unmount middle child, should show only the last title", () => {
-  let div = document.createElement("div");
-  const snapshot = "<title>Title 3</title>";
-  const [visible, setVisible] = createSignal(true);
-  const dispose = render(
-    () => (
-      <MetaProvider>
-        <div>
-          <Title>Title 1</Title>
-        </div>
-        <Show when={visible()}>
+  test("renders only the last title and cascades back through unmounts", async () => {
+    const div = document.createElement("div");
+    const [visible, setVisible] = createSignal(true);
+    const dispose = render(
+      () => (
+        <>
+          <div>
+            <Title>Title 1</Title>
+          </div>
           <div>
             <Title>Title 2</Title>
           </div>
-        </Show>
-        <div>
-          <Title>Title 3</Title>
-        </div>
-      </MetaProvider>
-    ),
-    div
-  );
-  expect(document.head.innerHTML).toBe(snapshot);
-  setVisible(false);
-  flush();
-  expect(document.head.innerHTML).toBe(snapshot);
-  dispose();
-});
-
-test("unmount last child, should show only the second last title", () => {
-  let div = document.createElement("div");
-  const snapshot1 = "<title>Title 3</title>";
-  const snapshot2 = "<title>Title 2</title>";
-  const [visible, setVisible] = createSignal(true);
-  const dispose = render(
-    () => (
-      <MetaProvider>
-        <div>
-          <Title>Title 1</Title>
-        </div>
-        <div>
-          <Title>Title 2</Title>
-        </div>
-        <Show when={visible()}>
-          <div>
-            <Title>Title 3</Title>
-          </div>
-        </Show>
-      </MetaProvider>
-    ),
-    div
-  );
-  expect(document.head.innerHTML).toBe(snapshot1);
-  setVisible(false);
-  flush();
-  expect(document.head.innerHTML).toBe(snapshot2);
-  dispose();
-});
-
-test("hydrates only the last title", () => {
-  hydrationScript();
-  let div = document.createElement("div");
-  document.head.innerHTML = `<title data-sm="0-0-2-0">Title 3</title>`;
-  const snapshot = '<title data-sm="0-0-2-0">Title 3</title><title>Title 3</title>';
-  const dispose = hydrate(
-    () => (
-      <MetaProvider>
-        <div>
-          <Title>Title 1</Title>
-        </div>
-        <div>
-          <Title>Title 2</Title>
-        </div>
-        <div>
-          <Title>Title 3</Title>
-        </div>
-      </MetaProvider>
-    ),
-    div
-  );
-  expect(document.head.innerHTML).toBe(snapshot);
-  dispose();
-  removeScript();
-});
-
-test("mounts and unmounts title", () => {
-  let div = document.createElement("div");
-  const snapshot1 = "<title>Static</title>";
-  const snapshot2 = "<title>Dynamic</title>";
-  const [visible, setVisible] = createSignal(false);
-  const dispose = render(
-    () => (
-      <MetaProvider>
-        <Title>Static</Title>
-        <Show when={visible()}>
-          <Title>Dynamic</Title>
-        </Show>
-      </MetaProvider>
-    ),
-    div
-  );
-
-  expect(document.head.innerHTML).toBe(snapshot1);
-  setVisible(true);
-  flush();
-  expect(document.head.innerHTML).toBe(snapshot2);
-  setVisible(false);
-  flush();
-  expect(document.head.innerHTML).toBe(snapshot1);
-  dispose();
-});
-
-test("hydrates and unmounts title", () => {
-  hydrationScript();
-  let div = document.createElement("div");
-  document.head.innerHTML = `<title data-sm="0-0-0-0">Static</title>`;
-  const snapshot1 = '<title data-sm="0-0-0-0">Static</title><title>Static</title>';
-  const snapshot2 = '<title data-sm="0-0-0-0">Static</title><title>Dynamic</title>';
-  const [visible, setVisible] = createSignal(false);
-  const dispose = hydrate(
-    () => (
-      <MetaProvider>
-        <Title>Static</Title>
-        <Show when={visible()}>
-          <Title>Dynamic</Title>
-        </Show>
-      </MetaProvider>
-    ),
-    div
-  );
-
-  expect(document.head.innerHTML).toBe(snapshot1);
-  setVisible(true);
-  flush();
-  expect(document.head.innerHTML).toBe(snapshot2);
-  setVisible(false);
-  flush();
-  expect(document.head.innerHTML).toBe(snapshot1);
-  dispose();
-  removeScript();
-});
-
-test("switches between titles", async () => {
-  let div = document.createElement("div");
-  const snapshot1 = "<title>Title 1</title>";
-  const snapshot2 = "<title>Title 2</title>";
-  const [visible, setVisible] = createSignal(true);
-
-  const Comp1 = lazy(async () => ({
-    default: function Comp() {
-      return <Title>Title 1</Title>;
-    }
-  }));
-
-  const Comp2 = lazy(async () => ({
-    default: function Comp() {
-      return <Title>Title 2</Title>;
-    }
-  }));
-
-  const dispose = render(
-    () => (
-      <MetaProvider>
-        <Title>Static</Title>
-        <Loading fallback={null}>
-          <Show when={visible()} fallback={<Comp2 />}>
-            <Comp1 />
+          <Show when={visible()}>
+            <div>
+              <Title>Title 3</Title>
+            </div>
           </Show>
-        </Loading>
-      </MetaProvider>
-    ),
-    div
-  );
+        </>
+      ),
+      div
+    );
+    await tick();
+    expect(document.title).toBe("Title 3");
+    expect(document.querySelectorAll("title").length).toBe(1);
 
-  await new Promise(resolve => setTimeout(resolve, 1));
-  expect(document.head.innerHTML).toBe(snapshot1);
-  setVisible(false);
-  flush();
-  await new Promise(resolve => setTimeout(resolve, 1));
-  expect(document.head.innerHTML).toBe(snapshot2);
-  dispose();
+    setVisible(false);
+    flush();
+    await tick();
+    expect(document.title).toBe("Title 2");
+
+    dispose();
+    await tick();
+    expect(document.title).toBe("Static");
+  });
+
+  test("unmounting a non-winning title does not change the winner", async () => {
+    const div = document.createElement("div");
+    const [visible, setVisible] = createSignal(true);
+    const dispose = render(
+      () => (
+        <>
+          <Show when={visible()}>
+            <div>
+              <Title>Title 1</Title>
+            </div>
+          </Show>
+          <div>
+            <Title>Title 2</Title>
+          </div>
+        </>
+      ),
+      div
+    );
+    await tick();
+    expect(document.title).toBe("Title 2");
+
+    setVisible(false);
+    flush();
+    await tick();
+    expect(document.title).toBe("Title 2");
+
+    dispose();
+    await tick();
+  });
+
+  test("page meta overrides layout meta with the same name and restores on unmount", async () => {
+    const div = document.createElement("div");
+    const [page, setPage] = createSignal(false);
+    const dispose = render(
+      () => (
+        <>
+          <Meta name="description" content="layout" />
+          <Show when={page()}>
+            <Meta name="description" content="page" />
+          </Show>
+        </>
+      ),
+      div
+    );
+    await tick();
+    let metas = document.head.querySelectorAll('meta[name="description"]');
+    expect(metas.length).toBe(1);
+    expect(metas[0].getAttribute("content")).toBe("layout");
+
+    setPage(true);
+    flush();
+    await tick();
+    metas = document.head.querySelectorAll('meta[name="description"]');
+    expect(metas.length).toBe(1);
+    expect(metas[0].getAttribute("content")).toBe("page");
+
+    setPage(false);
+    flush();
+    await tick();
+    expect(document.head.querySelector('meta[name="description"]')!.getAttribute("content")).toBe(
+      "layout"
+    );
+
+    dispose();
+    await tick();
+    expect(document.head.querySelector('meta[name="description"]')).toBe(null);
+  });
+
+  test("theme-color metas fork identity by media", async () => {
+    const div = document.createElement("div");
+    const dispose = render(
+      () => (
+        <>
+          <Meta name="theme-color" media="(prefers-color-scheme: light)" content="#fff" />
+          <Meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000" />
+        </>
+      ),
+      div
+    );
+    await tick();
+    const metas = [...document.head.querySelectorAll('meta[name="theme-color"]')];
+    expect(metas.map(m => m.getAttribute("content"))).toEqual(["#fff", "#000"]);
+
+    dispose();
+    await tick();
+    expect(document.head.querySelectorAll('meta[name="theme-color"]').length).toBe(0);
+  });
+
+  test("name and property are separate namespaces; a shared key unifies them", async () => {
+    const div = document.createElement("div");
+    const dispose = render(
+      () => (
+        <>
+          <Meta name="twitter:creator" content="@solid_js" />
+          <Meta property="twitter:creator" content="@ryancarniato" />
+          <Meta key="site" name="twitter:site" content="@one" />
+          <Meta key="site" property="og:site_name" content="two" />
+        </>
+      ),
+      div
+    );
+    await tick();
+    // Unkeyed: separate namespaces coexist.
+    expect(document.head.querySelectorAll('meta[content="@solid_js"]').length).toBe(1);
+    expect(document.head.querySelectorAll('meta[content="@ryancarniato"]').length).toBe(1);
+    // Keyed: one identity, last wins.
+    expect(document.head.querySelector('meta[content="@one"]')).toBe(null);
+    expect(document.head.querySelector('meta[content="two"]')).not.toBe(null);
+
+    dispose();
+    await tick();
+  });
+
+  test("swapping favicons replaces instead of accumulating", async () => {
+    const div = document.createElement("div");
+    const [alert, setAlert] = createSignal(false);
+    const dispose = render(
+      () => (
+        <>
+          <Link rel="icon" href="/favicon.ico" />
+          <Show when={alert()}>
+            <Link rel="icon" href="/favicon-alert.ico" />
+          </Show>
+        </>
+      ),
+      div
+    );
+    await tick();
+    let icons = [...document.head.querySelectorAll('link[rel="icon"]')];
+    expect(icons.map(l => l.getAttribute("href"))).toEqual(["/favicon.ico"]);
+
+    setAlert(true);
+    flush();
+    await tick();
+    icons = [...document.head.querySelectorAll('link[rel="icon"]')];
+    expect(icons.map(l => l.getAttribute("href"))).toEqual(["/favicon-alert.ico"]);
+
+    setAlert(false);
+    flush();
+    await tick();
+    icons = [...document.head.querySelectorAll('link[rel="icon"]')];
+    expect(icons.map(l => l.getAttribute("href"))).toEqual(["/favicon.ico"]);
+
+    dispose();
+    await tick();
+    expect(document.head.querySelectorAll('link[rel="icon"]').length).toBe(0);
+  });
+
+  test("escapes title text on the client via textContent", async () => {
+    const div = document.createElement("div");
+    const text = 'Hello</title><script>alert("inject");</script><title> World';
+    const dispose = render(() => <Title>{text}</Title>, div);
+    await tick();
+    expect(document.title).toBe(text);
+    expect(document.head.querySelectorAll("script").length).toBe(0);
+
+    dispose();
+    await tick();
+  });
+
+  test("Script renders an inline JSON-LD body", async () => {
+    const div = document.createElement("div");
+    const jsonLd = JSON.stringify({ "@type": "WebSite", name: "Solid" });
+    const dispose = render(
+      () => (
+        <Script type="application/ld+json" key="ld">
+          {jsonLd}
+        </Script>
+      ),
+      div
+    );
+    await tick();
+    const script = document.head.querySelector('script[type="application/ld+json"]')!;
+    expect(JSON.parse(script.textContent!)).toEqual({ "@type": "WebSite", name: "Solid" });
+
+    dispose();
+    await tick();
+    expect(document.head.querySelector("script")).toBe(null);
+  });
+
+  test("stylesheets are removed on unmount; fetch hints persist", async () => {
+    vi.useFakeTimers();
+    const div = document.createElement("div");
+    const dispose = render(
+      () => (
+        <>
+          <Stylesheet href="/page.css" />
+          <Link rel="preload" href="/hero.jpg" as="image" />
+        </>
+      ),
+      div
+    );
+    const sheet = document.head.querySelector('link[rel="stylesheet"]')!;
+    expect(sheet.getAttribute("href")).toBe("/page.css");
+    expect(document.head.querySelectorAll('link[rel="preload"]').length).toBe(1);
+
+    dispose();
+    await tick();
+    vi.runAllTimers();
+    expect(sheet.isConnected).toBe(false);
+    // Retracting a hint is pointless churn: it stays for the session.
+    expect(document.head.querySelectorAll('link[rel="preload"]').length).toBe(1);
+    document.head.querySelector('link[rel="preload"]')!.remove();
+    vi.useRealTimers();
+  });
+
+  test("useHead re-export registers an array as one group", async () => {
+    const div = document.createElement("div");
+    const dispose = render(() => {
+      useHead([
+        { tag: "meta", props: { property: "og:image", content: "/a.png" } },
+        { tag: "meta", props: { property: "og:image", content: "/b.png" } }
+      ]);
+      return null;
+    }, div);
+    await tick();
+    const imgs = [...document.head.querySelectorAll('meta[property="og:image"]')];
+    expect(imgs.map(m => m.getAttribute("content"))).toEqual(["/a.png", "/b.png"]);
+
+    dispose();
+    await tick();
+    expect(document.head.querySelectorAll('meta[property="og:image"]').length).toBe(0);
+  });
 });
 
-test("renders only the last meta with the same name", () => {
-  let div = document.createElement("div");
+describe("<Head> groups", () => {
+  test("groups same-identity tags and replaces the set atomically", async () => {
+    const div = document.createElement("div");
+    const [page, setPage] = createSignal(false);
+    const dispose = render(
+      () => (
+        <>
+          <Head>
+            <Meta property="og:image" content="/a.png" />
+            <Meta property="og:image" content="/b.png" />
+          </Head>
+          <Show when={page()}>
+            <Head>
+              <Meta property="og:image" content="/c.png" />
+            </Head>
+          </Show>
+        </>
+      ),
+      div
+    );
+    await tick();
+    let imgs = [...document.head.querySelectorAll('meta[property="og:image"]')];
+    expect(imgs.map(m => m.getAttribute("content"))).toEqual(["/a.png", "/b.png"]);
 
-  /* Something weird in this env
-  const snapshot1 = "<meta>Static 1</meta><meta name=\"name1\">Static 2</meta>";
-  const snapshot2 = "<meta>Static 1</meta><meta name=\"name1\">Dynamic 1</meta>";
-  const snapshot3 = "<meta>Dynamic 2</meta><meta name=\"name1\">Dynamic 1</meta>";
-  */
+    setPage(true);
+    flush();
+    await tick();
+    imgs = [...document.head.querySelectorAll('meta[property="og:image"]')];
+    expect(imgs.map(m => m.getAttribute("content"))).toEqual(["/c.png"]);
 
-  const snapshot1 = '<meta><meta name="name1">';
-  const snapshot2 = '<meta><meta name="name1">';
-  const snapshot3 = '<meta name="name1"><meta>';
+    setPage(false);
+    flush();
+    await tick();
+    imgs = [...document.head.querySelectorAll('meta[property="og:image"]')];
+    expect(imgs.map(m => m.getAttribute("content"))).toEqual(["/a.png", "/b.png"]);
 
-  const [visible1, setVisible1] = createSignal(false);
-  const [visible2, setVisible2] = createSignal(false);
-  const dispose = render(
-    () => (
-      <MetaProvider>
-        <Meta>Static 1</Meta>
-        <Meta name="name1">Static 2</Meta>
-        <Show when={visible1()}>
-          <Meta name="name1">Dynamic 1</Meta>
-        </Show>
-        <Show when={visible2()}>
-          <Meta>Dynamic 2</Meta>
-        </Show>
-      </MetaProvider>
-    ),
-    div
-  );
-  expect(document.head.innerHTML).toBe(snapshot1);
-  // mount first
-  setVisible1(true);
-  flush();
-  expect(document.head.innerHTML).toBe(snapshot2);
-  // mount second
-  setVisible2(true);
-  flush();
-  expect(document.head.innerHTML).toBe(snapshot3);
-  // unmount second
-  setVisible2(false);
-  flush();
-  // unmount first
-  setVisible1(false);
-  flush();
-  expect(document.head.innerHTML).toBe(snapshot1);
-  dispose();
+    dispose();
+    await tick();
+    expect(document.head.querySelectorAll('meta[property="og:image"]').length).toBe(0);
+  });
+
+  test("group membership is reactive, including through component calls", async () => {
+    const OgImage = (props: { src: string }) => <Meta property="og:image" content={props.src} />;
+    const div = document.createElement("div");
+    const [extra, setExtra] = createSignal(false);
+    const dispose = render(
+      () => (
+        <Head>
+          <Meta property="og:image" content="/a.png" />
+          <Show when={extra()}>
+            <OgImage src="/b.png" />
+          </Show>
+        </Head>
+      ),
+      div
+    );
+    await tick();
+    let imgs = [...document.head.querySelectorAll('meta[property="og:image"]')];
+    expect(imgs.map(m => m.getAttribute("content"))).toEqual(["/a.png"]);
+
+    setExtra(true);
+    flush();
+    await tick();
+    imgs = [...document.head.querySelectorAll('meta[property="og:image"]')];
+    expect(imgs.map(m => m.getAttribute("content"))).toEqual(["/a.png", "/b.png"]);
+
+    setExtra(false);
+    flush();
+    await tick();
+    imgs = [...document.head.querySelectorAll('meta[property="og:image"]')];
+    expect(imgs.map(m => m.getAttribute("content"))).toEqual(["/a.png"]);
+
+    dispose();
+    await tick();
+  });
+
+  test("a nested <Head> forms its own independent group", async () => {
+    const div = document.createElement("div");
+    const [inner, setInner] = createSignal(true);
+    const dispose = render(
+      () => (
+        <Head>
+          <Meta property="og:image" content="/outer.png" />
+          <Show when={inner()}>
+            <Head>
+              <Meta property="og:image" content="/inner.png" />
+            </Head>
+          </Show>
+        </Head>
+      ),
+      div
+    );
+    await tick();
+    // The inner group commits later, so it wins the identity outright —
+    // it did not merge into the outer set.
+    let imgs = [...document.head.querySelectorAll('meta[property="og:image"]')];
+    expect(imgs.map(m => m.getAttribute("content"))).toEqual(["/inner.png"]);
+
+    setInner(false);
+    flush();
+    await tick();
+    imgs = [...document.head.querySelectorAll('meta[property="og:image"]')];
+    expect(imgs.map(m => m.getAttribute("content"))).toEqual(["/outer.png"]);
+
+    dispose();
+    await tick();
+  });
 });
 
-test("renders only last meta with the same property", () => {
-  let div = document.createElement("div");
-  // something weird with meta tag stringification in this env
-  const snapshot = '<meta property="name1"><meta name="name2"><meta property="name3">';
-  const dispose = render(
-    () => (
-      <MetaProvider>
-        <Meta property="name1">Meta 1</Meta>
-        <Meta property="name1">Meta 2</Meta>
-        <Meta property="name2">Meta 3</Meta>
-        <Meta name="name2">Meta 4</Meta>
-        <Meta name="name3">Meta 5</Meta>
-        <Meta property="name3">Meta 6</Meta>
-      </MetaProvider>
-    ),
-    div
-  );
-  expect(document.head.innerHTML).toBe(snapshot);
-  dispose();
-});
+describe("hydration", () => {
+  test("claims server-rendered head tags instead of recreating them", async () => {
+    hydrationScript();
+    document.head.innerHTML =
+      '<title data-dh="title">Hydrated</title>' +
+      '<meta name="description" content="d" data-dh="meta:name:description">';
+    const serverTitle = document.head.querySelector("title");
+    const serverMeta = document.head.querySelector("meta");
+    const div = document.createElement("div");
+    const dispose = hydrate(
+      () => (
+        <>
+          <Title>Hydrated</Title>
+          <Meta name="description" content="d" />
+        </>
+      ),
+      div
+    );
+    // During hydration the registry defers and retries on macrotasks.
+    await new Promise(resolve => setTimeout(resolve, 10));
+    expect(document.querySelectorAll("title").length).toBe(1);
+    expect(document.head.querySelector("title")).toBe(serverTitle);
+    expect(document.head.querySelectorAll('meta[name="description"]').length).toBe(1);
+    expect(document.head.querySelector('meta[name="description"]')).toBe(serverMeta);
 
-test("renders both meta with the same name/property but different other attributes", () => {
-  let div = document.createElement("div");
-  const snapshot =
-    '<meta name="theme-color" media="(prefers-color-scheme: light)" content="#fff"><meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000">';
-  const dispose = render(
-    () => (
-      <MetaProvider>
-        <Meta name="theme-color" media="(prefers-color-scheme: light)" content="#fff" />
-        <Meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000" />
-      </MetaProvider>
-    ),
-    div
-  );
-  expect(document.head.innerHTML).toBe(snapshot);
-  dispose();
-});
-
-test("throws error if head tag is rendered without MetaProvider", () => {
-  expect(() => {
-    let div = document.createElement("div");
-    render(() => <Style>{`body {}`}</Style>, div);
-  }).toThrowError(/Context must either be created with a default value/);
-});
-
-test("doesn't create any effect on removal", () => {
-  let div = document.createElement("div");
-
-  const [show, setShow] = createSignal(true);
-  const showAndTest = () => {
-    expect(getOwner()?._parent).toBeTruthy();
-    return show();
-  };
-
-  const dispose = render(
-    () => (
-      <MetaProvider>
-        <Show when={show()}>
-          <Title>
-            Something {showAndTest()} that forces the Solid compiler to create a memo here
-          </Title>
-        </Show>
-      </MetaProvider>
-    ),
-    div
-  );
-
-  setShow(false);
-  flush();
-  dispose();
-});
-
-test("Escaping the title tag", () => {
-  let div = document.createElement("div");
-  const snapshot =
-    '<title>Hello&lt;/title&gt;&lt;script&gt;alert("inject");&lt;/script&gt;&lt;title&gt; World</title>';
-  const dispose = render(
-    () => (
-      <MetaProvider>
-        <div>
-          <Title>{'Hello</title><script>alert("inject");</script><title> World'}</Title>
-        </div>
-      </MetaProvider>
-    ),
-    div
-  );
-  expect(document.head.innerHTML).toBe(snapshot);
-  dispose();
-});
-
-test("Escaping the title meta", () => {
-  let div = document.createElement("div");
-  const snapshot = '<meta content="Text in &quot;quotes&quot;">';
-
-  const dispose = render(
-    () => (
-      <MetaProvider>
-        <div>
-          <Meta content={'Text in "quotes"'} />
-        </div>
-      </MetaProvider>
-    ),
-    div
-  );
-  expect(document.head.innerHTML).toBe(snapshot);
-  dispose();
+    dispose();
+    removeScript();
+    await new Promise(resolve => setTimeout(resolve, 10));
+    expect(document.head.querySelector('meta[name="description"]')).toBe(null);
+  });
 });
