@@ -10,6 +10,9 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
+    // test/server and test/hydration belong to the parity harness projects
+    // (vitest.config.ssr.ts / vitest.config.hydrate.ts).
+    include: ['test/*.spec.{ts,tsx}'],
     testTransformMode: {
       web: ['/\.[jt]sx?$/'],
     },

@@ -26,7 +26,7 @@
     "clean": "rimraf dist/",
     "build": "tsc",
     "test": "npm run test:unit && npm run test:types",
-    "test:unit": "vitest run",
+    "test:unit": "vitest run -c vitest.config.ssr.ts && vitest run -c vitest.config.hydrate.ts && vitest run",
     "test:watch": "vitest",
     "test:types": "tsc --project tsconfig.test.json",
     "release": "pnpm build && changeset publish"

@@ -2,6 +2,7 @@
   "compilerOptions": {
     "noEmit": true,
     "target": "esnext",
+    "module": "esnext",
     "moduleResolution": "bundler",
     "strict": true,
     "lib": ["dom", "esnext", "dom.iterable"],

@@ -2,6 +2,7 @@ import {
   Component,
   createComponent,
   createContext,
+  createMemo,
   createSignal,
   merge,
   omit,
@@ -32,12 +33,19 @@ function headTag(
   body?: boolean
 ): null {
   const tagProps = omit(props, "key", "children");
+  // The registry evaluates descriptor getters at runtime-dependent points
+  // (client: the registry effect; server: stream flush), but compiled JSX
+  // children can allocate computations when read — allocating there gives
+  // them different owners/hydration ids on each runtime and drifts every id
+  // assigned after them. The memo pins that allocation here, under the
+  // component at registration, on both runtimes; the getter is a pure read.
+  const bodyValue = body ? createMemo(() => flattenChildren(props.children)) : undefined;
   const desc: HeadTag = {
     tag,
     props: body
       ? merge(tagProps, {
           get children() {
-            return flattenChildren(props.children);
+            return bodyValue!();
           }
         })
       : tagProps,
