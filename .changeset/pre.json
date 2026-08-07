@@ -5,6 +5,8 @@
     "@solidjs/meta": "0.30.0-next.0"
   },
   "changesets": [
+    "drop-usehead-reexport",
+    "fix-title-body-hydration-id-drift",
     "solid-meta-1-0"
   ]
 }

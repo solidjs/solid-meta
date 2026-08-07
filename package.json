@@ -1,7 +1,7 @@
 {
   "name": "@solidjs/meta",
   "description": "Write meta tags to the document head",
-  "version": "1.0.0-next.0",
+  "version": "1.0.0-next.1",
   "author": "Ryan Carniato",
   "license": "MIT",
   "repository": {
