@@ -273,29 +273,30 @@ describe("head tag components", () => {
       ),
       div
     );
-    // solid 2.0.0-rc.0 warms stylesheets as <link rel="preload" as="style">
-    // and gates the swap to rel="stylesheet" on the preload's load event,
-    // which jsdom never fires — dispatch it, then let the gated effect
-    // resume. Mount runs under real timing (like the other tests); the fake
-    // timers are only for the removal deferral below.
-    await tick();
-    const warm = document.head.querySelector('link[rel="preload"][as="style"]')!;
-    expect(warm.getAttribute("href")).toBe("/page.css");
-    warm.dispatchEvent(new Event("load"));
-    await new Promise(resolve => setTimeout(resolve, 0));
+    // rc.0 gates stylesheets: the link enters as a style preload and flips to
+    // rel="stylesheet" once its load settles (jsdom never fires load, so
+    // dispatch it by hand).
+    const pre = document.head.querySelector('link[as="style"]')!;
+    expect(pre.getAttribute("href")).toBe("/page.css");
+    pre.dispatchEvent(new Event("load"));
+    flush();
+    await new Promise(resolve => setTimeout(resolve, 10));
     const sheet = document.head.querySelector('link[rel="stylesheet"]')!;
     expect(sheet.getAttribute("href")).toBe("/page.css");
     expect(document.head.querySelectorAll('link[rel="preload"]').length).toBe(1);
 
     vi.useFakeTimers();
-    dispose();
-    await tick();
-    vi.runAllTimers();
+    try {
+      dispose();
+      await tick();
+      vi.runAllTimers();
+    } finally {
+      vi.useRealTimers();
+    }
     expect(sheet.isConnected).toBe(false);
     // Retracting a hint is pointless churn: it stays for the session.
     expect(document.head.querySelectorAll('link[rel="preload"]').length).toBe(1);
     document.head.querySelector('link[rel="preload"]')!.remove();
-    vi.useRealTimers();
   });
 
   test("core useHead interop: an array registers as one group", async () => {

@@ -1,5 +1,5 @@
 import { defineConfig } from 'vitest/config';
-import solidPlugin from 'vite-plugin-solid';
+import solidPlugin from '@solidjs/vite-plugin';
 import { resolve } from 'node:path';
 
 // Server half of the SSR -> hydrate parity harness: compiles the shared

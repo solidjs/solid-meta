@@ -1,5 +1,5 @@
 import { defineConfig } from 'vitest/config';
-import solidPlugin from 'vite-plugin-solid';
+import solidPlugin from '@solidjs/vite-plugin';
 
 // Client half of the SSR -> hydrate parity harness: compiles the shared
 // scenarios with the hydratable dom generate and replays the artifacts
