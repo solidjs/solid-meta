@@ -1,7 +1,7 @@
 {
   "name": "@solidjs/meta",
   "description": "Write meta tags to the document head",
-  "version": "1.0.0-next.1",
+  "version": "1.0.0-next.2",
   "author": "Ryan Carniato",
   "license": "MIT",
   "repository": {
@@ -32,18 +32,18 @@
     "release": "pnpm build && changeset publish"
   },
   "peerDependencies": {
-    "solid-js": ">=2.0.0-beta.30 <2.0.0",
-    "@solidjs/web": ">=2.0.0-beta.31 <2.0.0"
+    "solid-js": "^2.0.0-rc.0",
+    "@solidjs/web": "^2.0.0-rc.0"
   },
   "devDependencies": {
     "@changesets/cli": "^2.28.1",
-    "@solidjs/web": "2.0.0-beta.31",
+    "@solidjs/web": "^2.0.0-rc.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@types/jest": "^29.5.14",
     "@vitest/browser": "^3.1.1",
     "jsdom": "^26.0.0",
     "rimraf": "^6.0.1",
-    "solid-js": "2.0.0-beta.30",
+    "solid-js": "^2.0.0-rc.0",
     "typescript": "5.8.3",
     "vite-plugin-solid": "^3.0.0-next.21",
     "vitest": "^3.1.1"

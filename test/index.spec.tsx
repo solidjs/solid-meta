@@ -263,7 +263,6 @@ describe("head tag components", () => {
   });
 
   test("stylesheets are removed on unmount; fetch hints persist", async () => {
-    vi.useFakeTimers();
     const div = document.createElement("div");
     const dispose = render(
       () => (
@@ -274,10 +273,21 @@ describe("head tag components", () => {
       ),
       div
     );
+    // solid 2.0.0-rc.0 warms stylesheets as <link rel="preload" as="style">
+    // and gates the swap to rel="stylesheet" on the preload's load event,
+    // which jsdom never fires — dispatch it, then let the gated effect
+    // resume. Mount runs under real timing (like the other tests); the fake
+    // timers are only for the removal deferral below.
+    await tick();
+    const warm = document.head.querySelector('link[rel="preload"][as="style"]')!;
+    expect(warm.getAttribute("href")).toBe("/page.css");
+    warm.dispatchEvent(new Event("load"));
+    await new Promise(resolve => setTimeout(resolve, 0));
     const sheet = document.head.querySelector('link[rel="stylesheet"]')!;
     expect(sheet.getAttribute("href")).toBe("/page.css");
     expect(document.head.querySelectorAll('link[rel="preload"]').length).toBe(1);
 
+    vi.useFakeTimers();
     dispose();
     await tick();
     vi.runAllTimers();

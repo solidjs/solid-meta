@@ -7,6 +7,7 @@
   "changesets": [
     "drop-usehead-reexport",
     "fix-title-body-hydration-id-drift",
-    "solid-meta-1-0"
+    "solid-meta-1-0",
+    "update-solid-rc-0"
   ]
 }
