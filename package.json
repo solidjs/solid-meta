@@ -35,7 +35,7 @@
     "release": "pnpm build && changeset publish"
   },
   "peerDependencies": {
-    "solid-js": ">=1.8.4"
+    "solid-js": "^1.8.4"
   },
   "devDependencies": {
     "@babel/cli": "^7.27.0",
