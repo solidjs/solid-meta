@@ -27,7 +27,7 @@
   "scripts": {
     "prebuild": "npm run clean",
     "clean": "rimraf dist/",
-    "build": "tsc && babel src/index.tsx --out-file dist/index.js",
+    "build": "tsc && babel src/index.tsx --out-file dist/index.js && node scripts/check-dist-esm.mjs",
     "test": "npm run test:unit && npm run test:types",
     "test:unit": "vitest run",
     "test:watch": "vitest",
