@@ -10,7 +10,7 @@ import {
   ParentComponent,
   useContext
 } from "solid-js";
-import { useHead, HeadTag, JSX } from "@solidjs/web";
+import { useHead, HeadTag, JSX, isServer } from "@solidjs/web";
 
 type GroupRegister = (tag: HeadTag) => void;
 
@@ -72,12 +72,15 @@ export const Head: ParentComponent = props => {
   // an intentional owned-scope write.
   const tags: HeadTag[] = [];
   const [dirty, setDirty] = createSignal(undefined, { equals: false, ownedWrite: true });
+  // The server skips the writes (#80): server render is pure, and the server
+  // useHead reads the group's membership when the owning boundary flushes,
+  // after every child has registered.
   const register: GroupRegister = tag => {
     tags.push(tag);
-    setDirty(undefined);
+    isServer || setDirty(undefined);
     onCleanup(() => {
       tags.splice(tags.indexOf(tag), 1);
-      setDirty(undefined);
+      isServer || setDirty(undefined);
     });
   };
   useHead(() => {

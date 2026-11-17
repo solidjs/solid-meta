@@ -1,5 +1,5 @@
 {
   "name": "title-dynamic-sync",
-  "shell": "<html _hk=0><head><meta name=\"description\" content=\"parity\" data-dh=\"meta:name:description\"><title data-dh=\"title\">My Solid Site</title></head><body><div id=\"app\"><!--$--><!--/--><p>Framework: <!--$-->Solid<!--/--></p></div></body></html>",
+  "shell": "<html _hk=0><head><!--$--><!--/--><meta name=\"viewport\" content=\"width=device-width\"><title data-dh=\"title\">My Solid Site</title><meta name=\"description\" content=\"parity\" data-dh=\"meta:name:description\"></head><body><div id=\"app\"><!--$--><!--/--><p>Framework: <!--$-->Solid<!--/--></p></div></body></html>",
   "rest": ""
 }
