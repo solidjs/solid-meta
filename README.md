@@ -1,5 +1,5 @@
 <p>
-  <img width="100%" src="https://assets.solidjs.com/banner?project=Meta&type=core" alt="Solid Meta">
+  <img width="100%" src="https://assets.solidjs.com/banner?project=Meta&type=core&version=2.0" alt="Solid Meta">
 </p>
 
 # Solid Meta [![npm Version](https://img.shields.io/npm/v/@solidjs/meta.svg?style=flat-square)](https://www.npmjs.org/package/@solidjs/meta)
