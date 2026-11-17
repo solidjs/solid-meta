@@ -1,5 +1,65 @@
 # @solidjs/meta
 
+## 2.0.0
+
+### Major Changes
+
+- 37caba2: Solid Meta 1.0: rebuilt as a thin layer over Solid 2.0's `useHead` primitive.
+
+  - **Provider-less**: the head registry is ambient. `MetaProvider` and
+    `MetaContext` are gone — remove the wrapper and the `tags={[]}` SSR
+    plumbing; on the server, head tags are spliced into `<head>` automatically
+    by `renderToString`/`renderToStream` (or collected via the `onHead` render
+    option).
+  - **New components**: `<Head>` groups its child tags into one replacement
+    set (several `og:image`s that override as a unit and restore on disposal);
+    `<Script>` covers JSON-LD and other head scripts.
+  - **New semantics from the core registry**: identity-based deduplication
+    with last-committed-wins and restore-on-disposal, `key` to override
+    identity, streaming-correct SSR patches that ride suspense reveals, and
+    flicker-free hydration adoption.
+  - **Removed**: the legacy `useHead(TagDescription)` shim (the core
+    `useHead(HeadTag | HeadTag[] | () => HeadTag[])` in `@solidjs/web`
+    replaces it),
+    `escape` prop (everything is escaped; text is applied via `textContent`),
+    `ref`/event handlers on head tags, and client-dynamic `<Base>` /
+    `<Meta charset>` (shell-only on the server, ignored with a dev warning on
+    the client).
+  - **Peer dependencies**: requires `solid-js` `>=2.0.0-beta.30` and
+    `@solidjs/web` `>=2.0.0-beta.31` (the first beta with reactive `useHead`
+    groups, media-qualified meta identity, and replaceable icons). For Solid
+    1.x stay on `@solidjs/meta` 0.29.x; for Solid 0.x, 0.26.x.
+
+  See the README migration guide for a 0.x → 1.0 walkthrough.
+
+- f9e874f: Solid Meta 2.0.0, the stable release for Solid 2.0. The version jumps to 2.0.0 to match `solid-js`, `@solidjs/web` and `@solidjs/router`: the `1.0.0-next.*` prereleases were this same line, and there is no stable 1.x. For Solid 1.x stay on `@solidjs/meta` 0.29.x.
+
+  Peer dependencies are now `solid-js` / `@solidjs/web` `^2.0.0`.
+
+### Patch Changes
+
+- 36a5a18: Drop the `useHead` / `HeadTag` re-exports. The primitive belongs to
+  `@solidjs/web` (a required peer) — import it from there. Keeping a second
+  import path for the identical function only invited confusion about whether
+  they differ.
+- 8a74994: Fix hydration id drift from dynamic Title/Style/Script bodies
+
+  Compiled JSX children (e.g. `<Title>Page {site()}</Title>`) can allocate a
+  computation when read. The head registry evaluates descriptor getters at
+  runtime-dependent points — the registry effect on the client, stream flush on
+  the server — so that allocation landed under different owners on each runtime
+  and drifted every hydration id assigned after it, breaking claims for content
+  rendered after the tag (most visibly under a streamed `Loading` boundary).
+
+  `headTag` now pins the body in a memo created at registration, under the
+  component, at the same point on both runtimes; the descriptor getter is a pure
+  read. Adds an SSR -> hydrate parity harness covering sync, root-async, and
+  boundary-async Title bodies.
+
+- f9e874f: `<Head>` no longer writes a signal during server render, so dev SSR stops logging `[SERVER_WRITE]` for every page that uses it (#80). The server reads the group's tags when its boundary flushes, so the write did nothing there.
+- f9e874f: Add a `solid` export condition so `@solidjs/vite-plugin` (through vitefu) bundles `@solidjs/meta` in SSR instead of leaving it external. Left external, Node loaded it against the production `solid-js` server build while the app ran on the dev build, and the two owner stacks threw `NoOwnerError` in dev SSR (#74).
+- 70014b4: Update `solid-js` / `@solidjs/web` to `2.0.0-rc.0` and move the peer ranges from `>=2.0.0-beta.30 <2.0.0` / `>=2.0.0-beta.31 <2.0.0` to `^2.0.0-rc.0`. The old ranges admitted the hazardous `2.0.0-experimental.*` publishes (which sort between beta and rc) and excluded stable `2.0.0`; the caret floors above the experimentals and auto-graduates to stable 2.x.
+
 ## 1.0.0-next.2
 
 ### Patch Changes
