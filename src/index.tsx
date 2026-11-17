@@ -244,7 +244,7 @@ function renderTags(tags: Array<TagDescription>) {
       const keys = Object.keys(tag.props);
       const props = keys
         .map(k =>
-          k === "children"
+          k === "children" || tag.props[k] == null
             ? ""
             : ` ${k}="${
                 // @ts-expect-error
