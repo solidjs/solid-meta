@@ -20,6 +20,8 @@ interface TagDescription {
   id: string;
   name?: string;
   ref?: Element;
+  /** Cascade key captured at add time so remove still finds the entry after reactive props change (#76). */
+  key?: string;
 }
 
 export interface MetaContextType {
@@ -34,7 +36,9 @@ const titleTagProperties: string[] = [];
 
 const metaTagProperties: string[] =
   // https://html.spec.whatwg.org/multipage/semantics.html#the-meta-element
-  ["name", "http-equiv", "content", "charset", "media"]
+  // `content` is the payload, not identity: including it made reactive content
+  // updates look like a different tag, so removeTag missed the cascade entry (#76).
+  ["name", "http-equiv", "charset", "media"]
     // additional properties
     .concat(["property"]);
 
@@ -95,6 +99,7 @@ function initClientProvider() {
       if (cascadingTags.indexOf(tag.tag) !== -1) {
         const properties = tag.tag === "title" ? titleTagProperties : metaTagProperties;
         const tagKey = getTagKey(tag, properties);
+        tag.key = tagKey;
 
         //  only cascading tags need to be kept as singletons
         if (!cascadedTagInstances.has(tagKey)) {
@@ -145,7 +150,9 @@ function initClientProvider() {
     },
     removeTag(tag: TagDescription, index: number) {
       const properties = tag.tag === "title" ? titleTagProperties : metaTagProperties;
-      const tagKey = getTagKey(tag, properties);
+      // Prefer the key captured at add time: reactive props may already have
+      // changed by the time createRenderEffect's cleanup runs (#76).
+      const tagKey = tag.key ?? getTagKey(tag, properties);
 
       if (tag.ref) {
         const t = cascadedTagInstances.get(tagKey);

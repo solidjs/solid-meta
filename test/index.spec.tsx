@@ -318,6 +318,37 @@ test("renders both meta with the same name/property but different other attribut
   dispose();
 });
 
+// #76: reactive content must not change the cascade key, or removeTag misses
+// the entry and repeated toggles eventually drop the tag from <head>.
+test("reactive Meta content updates in place across many toggles (#76)", () => {
+  let div = document.createElement("div");
+  const [themeColor, setThemeColor] = createSignal("#fff");
+  const dispose = render(
+    () => (
+      <MetaProvider>
+        <Meta name="theme-color" content={themeColor()} />
+      </MetaProvider>
+    ),
+    div
+  );
+
+  expect(document.head.querySelectorAll('meta[name="theme-color"]').length).toBe(1);
+  expect(document.head.querySelector('meta[name="theme-color"]')?.getAttribute("content")).toBe(
+    "#fff"
+  );
+
+  for (let i = 0; i < 6; i++) {
+    setThemeColor(i % 2 === 0 ? "#000" : "#fff");
+    expect(document.head.querySelectorAll('meta[name="theme-color"]').length).toBe(1);
+    expect(document.head.querySelector('meta[name="theme-color"]')?.getAttribute("content")).toBe(
+      i % 2 === 0 ? "#000" : "#fff"
+    );
+  }
+
+  dispose();
+  expect(document.head.querySelectorAll('meta[name="theme-color"]').length).toBe(0);
+});
+
 test("throws error if head tag is rendered without MetaProvider", () => {
   expect(() => {
     let div = document.createElement("div");
