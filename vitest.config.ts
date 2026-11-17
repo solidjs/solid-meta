@@ -3,9 +3,9 @@ import solidPlugin from '@solidjs/vite-plugin';
 
 export default defineConfig({
   plugins: [
-    // hot: false — solid-refresh's HMR wrapper trips STRICT_READ_UNTRACKED
+    // refresh: false — solid-refresh's HMR wrapper trips STRICT_READ_UNTRACKED
     // warnings under vitest and HMR is meaningless in tests.
-    solidPlugin({ hot: false })
+    solidPlugin({ refresh: false })
   ],
   test: {
     environment: 'jsdom',

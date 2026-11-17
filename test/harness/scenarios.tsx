@@ -43,6 +43,10 @@ const titleDynamicSync: Scenario = {
     <html>
       <head>
         <Meta name="description" content="parity" />
+        {/* An authored head child. @solidjs/web 2.0.0's hydrate() loops
+            forever when the head holds only registry tags (solid#4962, fixed
+            in 2.0.1); drop this once the devDependencies are on 2.0.1. */}
+        <meta name="viewport" content="width=device-width" />
       </head>
       <body>
         <div id="app">

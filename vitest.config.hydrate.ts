@@ -5,9 +5,9 @@ import solidPlugin from '@solidjs/vite-plugin';
 // scenarios with the hydratable dom generate and replays the artifacts
 // written by the server project (vitest.config.ssr.ts) into jsdom.
 export default defineConfig({
-  // hot: false — solid-refresh wraps top-level components in HMR wrappers
+  // refresh: false — solid-refresh wraps top-level components in HMR wrappers
   // that add owners and break hydration id parity.
-  plugins: [solidPlugin({ hot: false, solid: { hydratable: true } })],
+  plugins: [solidPlugin({ refresh: false, solid: { hydratable: true } })],
   test: {
     environment: 'jsdom',
     globals: true,

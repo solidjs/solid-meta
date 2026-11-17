@@ -8,7 +8,7 @@ Document head management for Solid — declare `<title>`, `<meta>`, `<link>`, an
 
 > | Solid version | @solidjs/meta version |
 > | --- | --- |
-> | Solid 2.x | 1.x |
+> | Solid 2.x | 2.x |
 > | Solid 1.x | 0.27.x – 0.29.x |
 > | Solid 0.x | 0.26.x |
 
@@ -20,7 +20,7 @@ npm i @solidjs/meta
 
 ## How it works
 
-Solid Meta 1.x is a thin component layer over Solid 2.0's built-in head
+Solid Meta 2.x is a thin component layer over Solid 2.0's built-in head
 registry (`useHead` in `@solidjs/web`). There is **no provider** — the
 registry is ambient. Render a head component anywhere and it registers under
 the current reactive owner:
@@ -140,7 +140,7 @@ useHead([ /* an array is a group — one replacement set */ ]);
 useHead(() => tags()); // a function is a reactive group
 ```
 
-## Migrating from 0.x
+## Migrating from 0.x (Solid 1)
 
 1. **Delete `<MetaProvider>`.** The registry is ambient; the provider and
    `MetaContext` no longer exist.
@@ -148,7 +148,7 @@ useHead(() => tags()); // a function is a reactive group
    `getAssets()` — rendering the document splices the head automatically
    (use the `onHead` render option if you assemble HTML yourself).
 3. **Duplicate-tag semantics changed.** 0.x kept multiple `<Meta>`s with the
-   same `name` if their other attributes differed; 1.x dedupes by
+   same `name` if their other attributes differed; 2.x dedupes by
    `name`/`property`/`http-equiv` (+ `media`) with last-wins. For deliberate
    sets (multiple `og:image`s), wrap them in `<Head>`; to fork an identity,
    give each tag a distinct `key`.
